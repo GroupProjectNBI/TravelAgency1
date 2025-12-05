@@ -1,43 +1,76 @@
 namespace TravelAgency;
 
-
+using System.Net.Mail;
 using MySql.Data.MySqlClient;
 
 class Users
 {
-  public record GetAll_Data(int Id, string Email, string Password);
+  public record GetAll_Data(int Id, string email, string first_name, string last_name, DateOnly date_of_birth, string password);
+
+  //Enum för status 
+  public enum RegistrationStatus { Success, EmailConflict, InvalidFormat }
+
   public static async Task<List<GetAll_Data>>
   GetAll(Config config)
   {
     List<GetAll_Data> result = new();
-    string query = "SELECT id, FirstName, LastName, Adress, DateOfBirth, Password";
+    string query = "SELECT Id, email, first_name, last_name, date_of_birth, password FROM users";
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query))
     {
       while (reader.Read())
       {
-        result.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetString(2)));
+        DateOnly dob = DateOnly.FromDateTime(reader.GetDateTime(4));
+        result.Add(new(reader.GetInt32(0), reader.GetString(1), reader.GetString(2), reader.GetString(3), dob, reader.GetString(5)));
       }
     }
     return result;
-  }
+  } // Nytt |
+  //        v
   public record Get_Data(string Email, string Password);
   public static async Task<Get_Data?>
-  Get(int id, Config config)
+  Get(int Id, Config config)
   {
     Get_Data? result = null;
-    string query = "SELECT Email, Password FROM users WEHRE id = @id";
-    var parameters = new MySqlParameter[] { new("@id", id) };
+    string query = "SELECT email, password FROM users WHERE Id = @Id";
+    var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query, parameters))
     {
       if (reader.Read())
       {
-        result = new(reader.GetString(0), reader.GetString(1));
+        result = new(reader.GetString(0), reader.GetString(1)); //Vad vill att den hämtar för något, Id? Email, Lösenord? 
       }
     }
     return result;
   }
+
+  //Validation logic
+  public static bool IsValidEmailFormat(string email)
+  {
+    if (string.IsNullOrWhiteSpace(email)) return false;
+    try
+    {
+      var addr = new MailAddress(email);
+      return addr.Address == email;
+    }
+    catch (FormatException)
+    {
+      return false;
+    }
+  }
+  public static async Task<bool>
+  IsEmailUnique(string email, Config config)
+  {
+    string query = "SELECT COUNT(*) FROM users WHERE email = @email";
+    var parameters = new MySqlParameter[] { new("@email", email) };
+
+    var count = await MySqlHelper.ExecuteScalarAsync(config.ConnectionString, query, parameters);
+
+    return Convert.ToInt64(count) == 0;
+  }
+  //    ¨¨
+  //     |
   public record Post_Args(string Email, string Password);
   public static async Task
   Post(Post_Args user, Config config)
@@ -51,10 +84,10 @@ class Users
     await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
   }
   public static async Task
-  Delete(int id, Config config)
+  Delete(int Id, Config config)
   {
-    string query = "DELETE FROM users WHERE id = @id";
-    var parameters = new MySqlParameter[] { new("@id", id) };
+    string query = "DELETE FROM users WHERE Id = @Id";
+    var parameters = new MySqlParameter[] { new("@Id", Id) };
 
     await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
   }
