@@ -71,14 +71,17 @@ class Users
   }
   //    ¨¨
   //     |
-  public record Post_Args(string Email, string Password);
+  public record Post_Args(string Email, string first_name, string last_name, string date_of_birth, string Password);
   public static async Task
   Post(Post_Args user, Config config)
   {
-    string query = """ INSERT INTO users(email, password) VALUES (@email, @password)""";
+    string query = """ INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES (@email, @first_name, @last_name, @date_of_birth, @password)""";
     var parameters = new MySqlParameter[]
     {
       new("@email", user.Email),
+      new("@first_name", user.first_name),
+      new("@last_name", user.last_name),
+      new("@date_of_birth", user.date_of_birth),
       new("@password", user.Password),
     };
     await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);

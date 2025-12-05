@@ -12,6 +12,7 @@ app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
 app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
+
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.Run();
 
