@@ -70,6 +70,7 @@ class Users
     return Convert.ToInt64(count) == 0;
   }
   //    ¨¨
+  //     ^
   //     |
   public record Post_Args(string Email, string first_name, string last_name, string date_of_birth, string Password);
   public static async Task
@@ -86,6 +87,22 @@ class Users
     };
     await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
   }
+
+  public record Patch_Args(string Email, string Password);
+  public static async Task
+  Patch(Patch_Args user, Config config)
+  {
+    string query = """ UPDATE users SET password = @password WHERE email = @email """;
+    var parameters = new MySqlParameter[]
+    {
+      new("@email", user.Email),
+      new("@password", user.Password)
+    };
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+
+  }
+
   public static async Task
   Delete(int Id, Config config)
   {
