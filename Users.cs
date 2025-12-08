@@ -90,14 +90,18 @@ class Users
 
   public record Patch_Args(string Email, string Password);
   public static async Task
-  Patch(Patch_Args user, Config config)
+  Patch(string temp_key, Patch_Args user, Config config)
   {
-    string query = """ UPDATE users SET password = @password WHERE email = @email """;
+    string query = """
+      UPDATE users 
+      SET password = @password 
+      WHERE id = (SELECT id from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+    """;
     var parameters = new MySqlParameter[]
     {
-      new("@email", user.Email),
+      new("@temp_key", temp_key),
       new("@password", user.Password)
-    };
+  };
 
     await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
 
