@@ -1,5 +1,4 @@
 global using MySql.Data.MySqlClient;
-using Microsoft.Extensions.Options;
 using TravelAgency;
 
 Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
