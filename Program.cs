@@ -42,6 +42,25 @@ async Task db_reset_to_default(Config config)
   /* expire_date  DATE NOT NULL */
   );
 
+  DELIMITER $$
+  CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+  BEGIN
+    START TRANSACTION;
+
+    INSERT INTO password_request (`user`)
+    SELECT u.id
+    FROM users u
+    WHERE u.email = p_email;
+
+    IF ROW_COUNT() = 0 THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+    END IF;
+
+    COMMIT;
+  END$$
+  DELIMITER ;
+
   CREATE TABLE users
   (
   Id INT PRIMARY KEY AUTO_INCREMENT,
@@ -58,24 +77,7 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
-  // DELIMITER $$
-  // CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
-  // BEGIN
-  //   START TRANSACTION;
 
-  //   INSERT INTO password_request (`user`)
-  //   SELECT u.id
-  //   FROM users u
-  //   WHERE u.email = p_email;
-
-  //   IF ROW_COUNT() = 0 THEN
-  //     ROLLBACK;
-  //     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
-  //   END IF;
-
-  //   COMMIT;
-  // END$$
-  // DELIMITER ;
 }
 
 //List<Users> UsersGet()
