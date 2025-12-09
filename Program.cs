@@ -89,7 +89,7 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
-    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Password is weak, Atleast 15 char." }),
+    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),//Weak-password minimum 15char hela
     _ => Results.StatusCode(500)
   };
 }
