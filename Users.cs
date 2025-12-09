@@ -7,7 +7,7 @@ class Users
 {
   public record GetAll_Data(int Id, string email, string first_name, string last_name, DateOnly date_of_birth, string password);
 
-  //Enum för status 
+  //Enum for status 
   public enum RegistrationStatus { Success, EmailConflict, InvalidFormat }
 
   public static async Task<List<GetAll_Data>>
@@ -25,21 +25,22 @@ class Users
       }
     }
     return result;
-  } // Nytt |
+  } // New |
   //        v
-  public record Get_Data(string Email, string Password);
+  public record Get_Data(string Email, string Password, string first_name, string last_name);
   public static async Task<Get_Data?>
   Get(int Id, Config config)
   {
     Get_Data? result = null;
-    string query = "SELECT email, password FROM users WHERE Id = @Id";
+    string query = "SELECT email, password, first_name, last_name FROM users WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query, parameters))
     {
       if (reader.Read())
       {
-        result = new(reader.GetString(0), reader.GetString(1)); //Vad vill att den hämtar för något, Id? Email, Lösenord? 
+
+        result = new(reader.GetString(0), reader.GetString(1), reader.GetString(2), reader.GetString(3)); //Vad vill att den hämtar för något, Id? Email, Lösenord? 
       }
     }
     return result;
@@ -69,8 +70,9 @@ class Users
 
     return Convert.ToInt64(count) == 0;
   }
-  //    ¨¨
-  //     |
+
+
+
   public record Post_Args(string Email, string first_name, string last_name, string date_of_birth, string Password);
   public static async Task
   Post(Post_Args user, Config config)
