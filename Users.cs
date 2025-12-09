@@ -50,20 +50,27 @@ class Users
   Reset(string email, Config config)
   {
     No_GET_Data? result = null;
+    string checkUserquery = """ SELECT COUNT(*) FROM users WHERE email = @email """;
+
     string queryPost = """  CALL create_password_request(@email)""";
     string query = "select BIN_TO_UUID(temp_key) from password_request where user = (select id from users  WHERE email = @email); ";
     var parameters = new MySqlParameter[] { new("@email", email) };
-    var test = await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
-    Console.WriteLine(test);
-
-    using (var reader = await
-    MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+    var count = await MySqlHelper.ExecuteScalarAsync(config.db, checkUserquery, parameters);
+    if (Convert.ToInt64(count) > 0)
     {
-      if (reader.Read())
+      var test = await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
+
+      using (var reader = await
+      MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
       {
-        result = new(reader.GetString(0));
+        if (reader.Read())
+        {
+          result = new(reader.GetString(0));
+        }
       }
+
     }
+
 
     return result;
 
