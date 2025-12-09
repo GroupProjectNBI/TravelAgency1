@@ -51,15 +51,13 @@ class Users
   {
     No_GET_Data? result = null;
     string checkUserquery = """ SELECT COUNT(*) FROM users WHERE email = @email """;
-
     string queryPost = """  CALL create_password_request(@email)""";
     string query = "select BIN_TO_UUID(temp_key) from password_request where user = (select id from users  WHERE email = @email); ";
     var parameters = new MySqlParameter[] { new("@email", email) };
     var count = await MySqlHelper.ExecuteScalarAsync(config.db, checkUserquery, parameters);
     if (Convert.ToInt64(count) > 0)
     {
-      var test = await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
-
+      await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
       using (var reader = await
       MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
       {
@@ -70,8 +68,6 @@ class Users
       }
 
     }
-
-
     return result;
 
   }
