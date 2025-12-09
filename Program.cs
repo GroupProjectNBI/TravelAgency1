@@ -1,17 +1,28 @@
-using MySql.Data.MySqlClient;
+global using MySql.Data.MySqlClient;
 using TravelAgency;
 
-var builder = WebApplication.CreateBuilder(args);
-
 Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
-builder.Services.AddSingleton<Config>(config);
-//builder.Services.AddDistributedMemoryCache();
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddSingleton(config);
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+  options.Cookie.HttpOnly = true;
+  options.Cookie.IsEssential = true;
+});
+
 var app = builder.Build();
+app.UseSession();
 
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
 app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
+
+app.MapGet("/", () => "Hello world!");
+app.MapGet("/profile", Profile.Get);
+app.MapPost("/login", Login.Post);
+app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.Run();
@@ -40,13 +51,14 @@ async Task db_reset_to_default(Config config)
   password VARCHAR(256))
   """;
 
-  await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, users_create);
-  await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.ConnectionStringorg', '1997-08-20', 'travelagency')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "INSERT INTO password_request (user) VALUES (1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.ConnectionStringorg', '1997-08-20', 'travelagency')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO password_request (user) VALUES (1)");
   //, NOW() + INTERVAL 1 DAY
 }
+
 //List<Users> UsersGet()
 //{
 // return Users;
