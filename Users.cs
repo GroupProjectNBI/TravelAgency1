@@ -70,6 +70,7 @@ class Users
     return Convert.ToInt64(count) == 0;
   }
   //    ¨¨
+  //     ^
   //     |
   public record Post_Args(string Email, string first_name, string last_name, string date_of_birth, string Password);
   public static async Task
@@ -86,6 +87,32 @@ class Users
     };
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
+
+  public record Patch_Args(string Email, string Password);
+  public static async Task
+  Patch(string temp_key, Patch_Args user, Config config)
+  {
+    string query = """
+    START TRANSACTION;
+      UPDATE users 
+      SET password = @password 
+      WHERE id = (SELECT id from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+    
+      DELETE  FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
+
+    COMMIT;
+
+    """;
+    var parameters = new MySqlParameter[]
+    {
+      new("@temp_key", temp_key),
+      new("@password", user.Password)
+  };
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+
+  }
+
   public static async Task
   Delete(int Id, Config config)
   {

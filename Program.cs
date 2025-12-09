@@ -23,16 +23,24 @@ app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
 app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
-
+app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.Run();
 
 //void
 async Task db_reset_to_default(Config config)
 {
-  string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
+  // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
+  /* adding a new table to the database : */
+  CREATE TABLE password_request
+  (
+  user INT REFERENCES users(id),
+  temp_key binary(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID()))
+  /* expire_date  DATE NOT NULL */
+  );
+
   CREATE TABLE users
   (
   Id INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,12 +48,15 @@ async Task db_reset_to_default(Config config)
   first_name VARCHAR(50),
   last_name VARCHAR(100),
   date_of_birth DATE,
-  password VARCHAR(256) )
+  password VARCHAR(256))
   """;
 
-  await MySqlHelper.ExecuteNonQueryAsync(db, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(db, users_create);
-  await MySqlHelper.ExecuteNonQueryAsync(db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.ConnectionStringorg', '1997-08-20', 'travelagency')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO password_request (user) VALUES (1)");
+  //, NOW() + INTERVAL 1 DAY
 }
 
 //List<Users> UsersGet()
