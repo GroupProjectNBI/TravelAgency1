@@ -22,7 +22,19 @@ app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
-app.MapPost("/login", Login.Post);
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Json(
+    new { message = "Unvalid credentials" },
+    statusCode: StatusCodes.Status401Unauthorized);
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
 app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
