@@ -22,11 +22,12 @@ async Task db_reset_to_default(Config config)
   // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
-  // adding a new table to the database :
+  /* adding a new table to the database : */
   CREATE TABLE password_request
   (
   user INT REFERENCES users(id),
   temp_key binary(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID()))
+  /* expire_date  DATE NOT NULL */
   );
 
   CREATE TABLE users
@@ -44,6 +45,7 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.ConnectionStringorg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, "INSERT INTO password_request (user) VALUES (1)");
+  //, NOW() + INTERVAL 1 DAY
 }
 //List<Users> UsersGet()
 //{
