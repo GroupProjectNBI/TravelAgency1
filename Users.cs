@@ -45,6 +45,33 @@ class Users
     return result;
   }
 
+  public record No_GET_Data(string token);
+  public static async Task<No_GET_Data?>
+  Reset(string email, Config config)
+  {
+    No_GET_Data? result = null;
+    string checkUserquery = """ SELECT COUNT(*) FROM users WHERE email = @email """;
+    string queryPost = """  CALL create_password_request(@email)""";
+    string query = "select BIN_TO_UUID(temp_key) from password_request where user = (select id from users  WHERE email = @email); ";
+    var parameters = new MySqlParameter[] { new("@email", email) };
+    var count = await MySqlHelper.ExecuteScalarAsync(config.db, checkUserquery, parameters);
+    if (Convert.ToInt64(count) > 0)
+    {
+      await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
+      using (var reader = await
+      MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+      {
+        if (reader.Read())
+        {
+          result = new(reader.GetString(0));
+        }
+      }
+
+    }
+    return result;
+
+  }
+
   //Validation logic
   public static bool IsValidPassword(string password)
   {
@@ -135,12 +162,12 @@ class Users
   Patch(string temp_key, Patch_Args user, Config config)
   {
     string query = """
-        START TRANSACTION;
-          UPDATE users 
-          SET password = @password 
-          WHERE id = (SELECT id from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
-        
-          DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
+    START TRANSACTION;
+      UPDATE users 
+      SET password = @password 
+      WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+    
+      DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
 
         COMMIT;
 
