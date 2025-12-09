@@ -84,6 +84,17 @@ async Task InitializeDatabase( Config config)
 // Lägg till City, INSERT ....
 //Lägg till Culinary Experiences, INSERT ....
 
+// TODO: Initialize database with sample locations like Malmö and Köpenhamn
+// Example:
+// INSERT INTO locations (City, Description) VALUES ('Malmö', 'Description...'), ('Köpenhamn', 'Description...');
+
+// TODO: Add culinary experiences for each location
+// Example:
+// INSERT INTO culinary_experiences (LocationId, Name) VALUES (1, 'Smörrebröd provning'), (2, 'Noma-inspirerad matupplevelse');
+
+// TODO: Implement method to fetch culinary experiences for each Location
+// Currently, CulinaryExperiences is an empty list.
+// Later: join with culinary_experiences table to populate it.
 
 
 
