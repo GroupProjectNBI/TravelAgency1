@@ -22,7 +22,19 @@ app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
-app.MapPost("/login", Login.Post);
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Json(
+    new { message = "Unvalid credentials" },
+    statusCode: StatusCodes.Status401Unauthorized);
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
 app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
@@ -108,7 +120,7 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
-    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Password is weak, Atleast 15 char." }),
+    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
     _ => Results.StatusCode(500)
   };
 }

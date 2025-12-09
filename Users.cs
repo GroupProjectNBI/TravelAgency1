@@ -1,6 +1,6 @@
 namespace TravelAgency;
 
-using System.Net.Mail;
+using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
 class Users
@@ -94,12 +94,16 @@ class Users
   public static bool IsValidEmailFormat(string email)
   {
     if (string.IsNullOrWhiteSpace(email)) return false;
+
+    //Regex for standard email-validate
+    const string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+
+    //RegexOptions.IgnoreCase ignores if upper/lower_case
     try
     {
-      var addr = new MailAddress(email);
-      return addr.Address == email;
+      return Regex.IsMatch(email, pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
     }
-    catch (FormatException)
+    catch (RegexMatchTimeoutException)
     {
       return false;
     }
