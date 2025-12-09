@@ -16,8 +16,9 @@ app.UseSession();
 
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-app.MapPost("/register", Users.Post);
+//app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
+app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
@@ -36,6 +37,7 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 });
 app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
+app.MapGet("/reset/{email}", Users.Reset);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.Run();
 
@@ -53,6 +55,25 @@ async Task db_reset_to_default(Config config)
   /* expire_date  DATE NOT NULL */
   );
 
+  DELIMITER $$
+  CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+  BEGIN
+    START TRANSACTION;
+
+    INSERT INTO password_request (`user`)
+    SELECT u.id
+    FROM users u
+    WHERE u.email = p_email;
+
+    IF ROW_COUNT() = 0 THEN
+      ROLLBACK;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+    END IF;
+
+    COMMIT;
+  END$$
+  DELIMITER ;
+
   CREATE TABLE users
   (
   Id INT PRIMARY KEY AUTO_INCREMENT,
@@ -66,10 +87,25 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.ConnectionStringorg', '1997-08-20', 'travelagency')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO password_request (user) VALUES (1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
+  // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
+
 }
+static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
+{
+  var (status, userId) = await Users.Post(user, config);
+  return status switch
+
+  {
+    Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
+    Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
+    Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
+    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Password is weak, Atleast 15 char." }),
+    _ => Results.StatusCode(500)
+  };
+}
+
 
 //List<Users> UsersGet()
 //{
