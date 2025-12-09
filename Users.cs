@@ -228,4 +228,26 @@ class Users
     }
     return result;
   }
+  public record RateTrip_Args(int booking_id, int rating);
+
+  public static async Task<int>
+  RateTrip(RateTrip_Args ratingData, int userId, Config config)
+  {
+    string query = """
+    UPDATE bookings b
+    JOIN trips t ON b.trip_id = t.id
+    SET b.rating = @rating
+    WHERE b.id = @booking_id
+    AND b.user_id = @userId
+    AND t.departure_date < CURDATE()
+    """;
+
+    var parameters = new MySqlParameter[]
+    {
+      new("@rating", ratingData.rating),
+      new("@booking_id", ratingData.booking_id),
+      new("@userId", userId)
+    };
+    return await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+  }
 }
