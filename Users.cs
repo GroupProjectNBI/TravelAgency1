@@ -16,7 +16,7 @@ class Users
     List<GetAll_Data> result = new();
     string query = "SELECT Id, email, first_name, last_name, date_of_birth, password FROM users";
     using (var reader = await
-    MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query))
+    MySqlHelper.ExecuteReaderAsync(config.db, query))
     {
       while (reader.Read())
       {
@@ -35,7 +35,7 @@ class Users
     string query = "SELECT email, password FROM users WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
-    MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query, parameters))
+    MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
     {
       if (reader.Read())
       {
@@ -43,6 +43,30 @@ class Users
       }
     }
     return result;
+  }
+
+  public record No_GET_Data(string token);
+  public static async Task<No_GET_Data?>
+  Reset(string email, Config config)
+  {
+    No_GET_Data? result = null;
+    string queryPost = """  CALL create_password_request(@email)""";
+    string query = "select BIN_TO_UUID(temp_key) from password_request where user = (select id from users  WHERE email = @email); ";
+    var parameters = new MySqlParameter[] { new("@email", email) };
+    var test = await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
+    Console.WriteLine(test);
+
+    using (var reader = await
+    MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+    {
+      if (reader.Read())
+      {
+        result = new(reader.GetString(0));
+      }
+    }
+
+    return result;
+
   }
 
   //Validation logic
@@ -65,7 +89,7 @@ class Users
     string query = "SELECT COUNT(*) FROM users WHERE email = @email";
     var parameters = new MySqlParameter[] { new("@email", email) };
 
-    var count = await MySqlHelper.ExecuteScalarAsync(config.ConnectionString, query, parameters);
+    var count = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
 
     return Convert.ToInt64(count) == 0;
   }
@@ -85,7 +109,7 @@ class Users
       new("@date_of_birth", user.date_of_birth),
       new("@password", user.Password),
     };
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
 
   public record Patch_Args(string Email, string Password);
@@ -109,7 +133,7 @@ class Users
       new("@password", user.Password)
   };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
   }
 
@@ -119,6 +143,6 @@ class Users
     string query = "DELETE FROM users WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
 }
