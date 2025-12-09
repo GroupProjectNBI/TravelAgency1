@@ -16,8 +16,9 @@ app.UseSession();
 
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-app.MapPost("/register", Users.Post);
+//app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
+app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
@@ -58,6 +59,20 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO password_request (user) VALUES (1)");
   //, NOW() + INTERVAL 1 DAY
 }
+static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
+{
+  var (status, userId) = await Users.Post(user, config);
+  return status switch
+
+  {
+    Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
+    Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
+    Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
+    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Password is weak, Atleast 15 char." }),
+    _ => Results.StatusCode(500)
+  };
+}
+
 
 //List<Users> UsersGet()
 //{
