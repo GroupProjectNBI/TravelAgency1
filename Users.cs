@@ -1,6 +1,6 @@
 namespace TravelAgency;
 
-using System.Net.Mail;
+using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
 class Users
@@ -8,7 +8,7 @@ class Users
   public record GetAll_Data(int Id, string email, string first_name, string last_name, DateOnly date_of_birth, string password);
 
   //Enum för status 
-  public enum RegistrationStatus { Success, EmailConflict, InvalidFormat }
+  public enum RegistrationStatus { Success, EmailConflict, InvalidFormat, WeakPassword }
 
   public static async Task<List<GetAll_Data>>
   GetAll(Config config)
@@ -25,8 +25,8 @@ class Users
       }
     }
     return result;
-  } // Nytt |
-  //        v
+  }
+
   public record Get_Data(string Email, string Password);
   public static async Task<Get_Data?>
   Get(int Id, Config config)
@@ -76,12 +76,16 @@ class Users
   public static bool IsValidEmailFormat(string email)
   {
     if (string.IsNullOrWhiteSpace(email)) return false;
+
+    //Regex for standard email-validate
+    const string pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+
+    //RegexOptions.IgnoreCase ignores if upper/lower_case
     try
     {
-      var addr = new MailAddress(email);
-      return addr.Address == email;
+      return Regex.IsMatch(email, pattern, RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(250));
     }
-    catch (FormatException)
+    catch (RegexMatchTimeoutException)
     {
       return false;
     }
@@ -96,9 +100,6 @@ class Users
 
     return Convert.ToInt64(count) == 0;
   }
-  //    ¨¨
-  //     ^
-  //     |
   public record Post_Args(string Email, string first_name, string last_name, string date_of_birth, string Password);
   public static async Task
   Post(Post_Args user, Config config)
