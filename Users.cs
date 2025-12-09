@@ -109,7 +109,7 @@ class Users
       new("@password", user.Password)
   };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
   }
 
