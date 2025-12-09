@@ -123,9 +123,9 @@ class Users
     START TRANSACTION;
       UPDATE users 
       SET password = @password 
-      WHERE id = (SELECT id from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+      WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
     
-      DELETE  FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
+      DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
 
     COMMIT;
 
