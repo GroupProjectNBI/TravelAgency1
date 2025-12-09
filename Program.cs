@@ -27,7 +27,9 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 
   if (!success)
   {
-    return Results.Unauthorized();
+    return Results.Json(
+    new { message = "Unvalid credentials" },
+    statusCode: StatusCodes.Status401Unauthorized);
   }
 
   return Results.Ok(new { message = "Login successful" });
