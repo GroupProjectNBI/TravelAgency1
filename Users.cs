@@ -162,7 +162,7 @@ class Users
   Patch(string temp_key, Patch_Args user, Config config)
   {
     string query = """
-    START TRANSACTION;
+      START TRANSACTION;
       UPDATE users 
       SET password = @password 
       WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
@@ -171,7 +171,7 @@ class Users
 
         COMMIT;
 
-        """;
+      """;
     var parameters = new MySqlParameter[]
     {
             new("@temp_key", temp_key),
