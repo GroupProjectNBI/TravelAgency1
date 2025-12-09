@@ -21,7 +21,17 @@ app.MapDelete("/db", db_reset_to_default);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
-app.MapPost("/login", Login.Post);
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Unauthorized();
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
 app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
