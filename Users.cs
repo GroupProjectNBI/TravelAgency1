@@ -194,4 +194,38 @@ class Users
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
+  public record UpcomingTrips(string destination, DateOnly departure_date, DateOnly return_date);
+
+  public static async Task<List<UpcomingTrips>>
+  GetUpcomingTrips(int userId, Config config)
+  {
+    List<UpcomingTrips> result = new();
+
+    //We need to match our booking-table, I fill in how I think it should look like here
+    string query = """
+    SELECT 
+    t.destination,
+    t.departure_date,
+    t.return_date
+    FROM bookings b
+    JOIN trips t ON b.trip_id = t.id
+    WHERE b.user_id = @userId
+    AND t.departure_date >= CURDATE()
+    ORDER BY t.departure_date ASC
+    """;
+
+    var parameters = new MySqlParameter[] { new("@userId", userId) };
+
+    using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+    {
+      while (reader.Read())
+      {
+        DateOnly departure = DateOnly.FromDateTime(reader.GetDateTime(1));
+        DateOnly return_date = DateOnly.FromDateTime(reader.GetDateTime(2));
+
+        result.Add(new(reader.GetString(0), departure, return_date));
+      }
+    }
+    return result;
+  }
 }

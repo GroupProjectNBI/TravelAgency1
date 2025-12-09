@@ -19,6 +19,7 @@ app.MapGet("/register/{Id}", Users.Get);
 //app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
 app.MapPost("/register", Users_Post_Handler);
+app.MapGet("/upcomingtrips", UpcomingTrips_Get_Handler);
 
 app.MapGet("/", () => "Hello world!");
 app.MapGet("/profile", Profile.Get);
@@ -105,6 +106,31 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     _ => Results.StatusCode(500)
   };
 }
+static async Task<IResult> UpcomingTrips_Get_Handler(HttpContext context, Config config)
+{
+  //Controlls login session
+  if (!context.Session.TryGetValue("UserId", out byte[]? userIdBytes))
+  {
+    return Results.Unauthorized();
+  }
+  if (userIdBytes == null)
+  {
+    return Results.Unauthorized();
+  }
+  int userId = BitConverter.ToInt32(userIdBytes, 0);
+
+  var trips = await Users.GetUpcomingTrips(userId, config);
+
+  if (trips.Count > 0)
+  {
+    return Results.Ok(trips);
+  }
+  else
+  {
+    return Results.NotFound(new { Message = "No upcoming trips found." });
+  }
+}
+
 
 
 //List<Users> UsersGet()
