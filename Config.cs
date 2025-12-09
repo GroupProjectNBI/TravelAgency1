@@ -1,3 +1,3 @@
 namespace TravelAgency;
 
-record Config(string db);
+public record Config(string db);

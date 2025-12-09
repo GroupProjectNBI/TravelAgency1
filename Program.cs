@@ -1,4 +1,5 @@
 global using MySql.Data.MySqlClient;
+using MySqlX.XDevAPI.Common;
 using TravelAgency;
 
 Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
@@ -39,7 +40,83 @@ app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
+
+
+var locations = new Locations(config);
+//skpar tabeller och data
+await InitializeDatabase(config);
+
+//POST välj destination
+app.MapPost("/location/choose/{id}", async (int id, HttpContext http) =>
+{
+    var location = await locations.Get(id);
+  if (location == null) return Results.NotFound("Destination not found"); // *uppdatera Gherkin
+  
+  http.Session.SetString("ChosenArrival", location.City);
+  return Results.Ok(new
+  {
+    Message = "Destination chosen successfully",
+    Location = location
+  });
+});
+ // Get hämta vald destination
+app.MapGet("/location/chosen", async (HttpContext http) =>
+{
+var chosen = http.Session.GetString("ChosenArrival");
+  if (string.IsNullOrEmpty(chosen)) return Results.NotFound("No destination chosen .");
+
+var allLocations = await locations.GetAll();
+var location = allLocations.FirstOrDefault(l => l.City == chosen);
+return Results.Ok(location);
+});
+
+
 app.Run();
+
+async Task InitializeDatabase( Config config)
+{
+  string createLocations = @"
+    CREATE TABLE IF NOT EXISTS locations
+    (
+        Id INT PRIMARY KEY AUTO_INCREMENT,
+        City VARCHAR(100) NOT NULL,
+        Description TEXT
+    );";
+
+  string createCulinaryExpreriences = @"
+    CREATE TABLE IF NOT EXISTS culinary_experiences
+    (
+        Id INT PRIMARY KEY AUTO_INCREMENT,
+        LocationId INT NOT NULL,
+        Name VARCHAR(255) NOT NULL,
+        FOREIGN KEY (LocationId) REFERENCES locations(Id)
+    );";
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, createLocations);
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, createCulinaryExpreriences);
+}
+
+// Lägg till City, INSERT ....
+//Lägg till Culinary Experiences, INSERT ....
+
+// TODO: Initialize database with sample locations like Malmö and Köpenhamn
+// Example:
+// INSERT INTO locations (City, Description) VALUES ('Malmö', 'Description...'), ('Köpenhamn', 'Description...');
+
+// TODO: Add culinary experiences for each location
+// Example:
+// INSERT INTO culinary_experiences (LocationId, Name) VALUES (1, 'Smörrebröd provning'), (2, 'Noma-inspirerad matupplevelse');
+
+// TODO: Implement method to fetch culinary experiences for each Location
+// Currently, CulinaryExperiences is an empty list.
+// Later: join with culinary_experiences table to populate it.
+
+
+
+
+
+
+
+
 
 //void
 async Task db_reset_to_default(Config config)
