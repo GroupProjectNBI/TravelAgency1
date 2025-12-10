@@ -21,7 +21,7 @@ app.MapDelete("/db", db_reset_to_default);
 app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
-app.MapDelete("/hotel/{Id}", Users.Delete_Hotel);
+app.MapDelete("/hotel/{Id}", Hotels.DeleteHotel);
 app.MapGet("/profile", Profile.Get);
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
@@ -82,7 +82,7 @@ async Task db_reset_to_default(Config config)
   address VARCHAR(255) NOT NULL,
   price_class INT NOT NULL, 
   has_breakfast BOOL NOT NULL DEFAULT FALSE,
-  FOREIGN KEY (location_id) REFERENCES location(id)
+  FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
   CREATE TABLE rooms
