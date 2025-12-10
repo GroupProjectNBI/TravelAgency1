@@ -47,8 +47,9 @@ app.Run();
 async Task db_reset_to_default(Config config)
 {
   // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
-
-  string users_create = """ 
+  // shouldn't be string create_schema, to define whole schema in one string? 
+  //Shouldn't Stored procedure be last or run seperated? Like string create_proc .... because it use DELIMITER
+  string users_create = """
   /* adding a new table to the database : */
   CREATE TABLE password_request
   (
