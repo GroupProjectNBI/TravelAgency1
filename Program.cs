@@ -73,14 +73,13 @@ async Task db_reset_to_default(Config config)
   );
 
   
-    CREATE TABLE Hotels
+    CREATE TABLE hotels
   (
   Id INT PRIMARY KEY AUTO_INCREMENT,
   name varchar(100) NOT NULL, 
   address VARCHAR(255) NOT NULL,
-  price_class INT NOT NULL,
-   INT NOT NULL, 
-  breakfast BOOL NOT NULL DEFAULT FALSE
+  price_class INT NOT NULL, 
+  has_breakfast BOOL NOT NULL DEFAULT FALSE
   );     
 
   CREATE TABLE users

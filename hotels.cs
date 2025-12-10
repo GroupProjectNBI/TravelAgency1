@@ -11,7 +11,7 @@ class Hotels
     GetAll(Config config)
     {
         List<GetAll_Data> result = new();
-        string query = "SELECT name, address, price_class,rooms, breakfast FROM Hotels ;";
+        string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels ;";
         using (var reader = await
         MySqlHelper.ExecuteReaderAsync(config.db, query))
         {
@@ -33,7 +33,7 @@ class Hotels
     Get(int Id, Config config)
     {
         Get_Data? result = null;
-        string query = "SELECT name, address, price_class,rooms, breakfast FROM Hotels WHERE Id = @Id";
+        string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels WHERE Id = @Id";
         var parameters = new MySqlParameter[] { new("@Id", Id) };
         using (var reader = await
         MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
