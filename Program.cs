@@ -63,7 +63,6 @@ async Task db_reset_to_default(Config config)
   address VARCHAR(255) NOT NULL,
   price_class INT NOT NULL,
   rooms INT NOT NULL, 
-  floor INT NOT NULL,
   breakfast BOOL NOT NULL DEFAULT FALSE
   );     
 
@@ -125,7 +124,7 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
 // ALTER TABLE Hotels
 //   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
-
+// floor INT NOT NULL, dddd
 //List<Users> UsersGet()
 //{
 // return Users;
