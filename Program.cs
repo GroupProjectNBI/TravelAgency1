@@ -86,7 +86,7 @@ async Task db_reset_to_default(Config config)
   (
   id INT PRIMARY KEY AUTO_INCREMENT,
   hotel_id INT NOT NULL,
-  name ENUM ('Single, Double, Suit'),
+  name ENUM ('Single', 'Double', 'Suit'),
   capacity INT,
   price_per_night DECIMAL,
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
