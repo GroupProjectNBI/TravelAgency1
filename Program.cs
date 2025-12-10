@@ -39,6 +39,9 @@ app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
+app.MapGet("/locations/{UserInput}", Destinations.Search);
+app.MapPost("/location", Destinations.Post);
+app.MapDelete("/location/{Id}", Destinations.Delete);
 app.Run();
 
 //void
@@ -53,6 +56,18 @@ async Task db_reset_to_default(Config config)
   user INT REFERENCES users(id),
   temp_key binary(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID()))
   /* expire_date  DATE NOT NULL */
+  );
+  CREATE TABLE countries
+  (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100)
+  );
+
+  CREATE TABLE locations
+  (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  contryId INT REFERENCES contries(id),
+  city VARCHAR (100)
   );
 
   DELIMITER $$
@@ -86,8 +101,13 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS contries");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `countries` (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `locations` VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
+
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 
