@@ -42,6 +42,8 @@ app.MapGet("/reset/{email}", Users.Reset);
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/location", Destinations.Post);
 app.MapDelete("/location/{Id}", Destinations.Delete);
+app.MapGet("/hotels", Hotels.GetAll);
+app.MapGet("/hotel/{Id}", Hotels.Get);
 app.Run();
 
 //void
@@ -77,7 +79,7 @@ async Task db_reset_to_default(Config config)
   location_id INT NOT NULL,
   name varchar(100) NOT NULL, 
   address VARCHAR(255) NOT NULL,
-  price_class INT NOT NULL,
+  price_class INT NOT NULL, 
   has_breakfast BOOL NOT NULL DEFAULT FALSE,
   FOREIGN KEY (location_id) REFERENCES location(id)
   );

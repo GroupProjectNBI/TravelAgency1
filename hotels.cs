@@ -1,0 +1,55 @@
+namespace TravelAgency;
+
+using System.Text.RegularExpressions;
+using MySql.Data.MySqlClient;
+
+class Hotels
+{
+    public record GetAll_Data(string name, string address, int price_class, int rooms, bool breakfast);
+    public static async Task<List<GetAll_Data>>
+
+    GetAll(Config config)
+    {
+        List<GetAll_Data> result = new();
+        string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels ;";
+        using (var reader = await
+        MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+            while (reader.Read())
+            {
+                result.Add(new(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetBoolean(4)
+                ));
+            }
+        }
+        return result;
+    }
+    public record Get_Data(string name, string address, int price_class, int rooms, bool breakfast);
+    public static async Task<Get_Data?>
+    Get(int Id, Config config)
+    {
+        Get_Data? result = null;
+        string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels WHERE Id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+        using (var reader = await
+        MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+        {
+            if (reader.Read())
+            {
+                result = new(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetBoolean(4)
+                );
+            }
+        }
+        return result;
+    }
+
+}
