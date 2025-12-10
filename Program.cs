@@ -42,6 +42,7 @@ app.MapGet("/reset/{email}", Users.Reset);
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/location", Destinations.Post);
 app.MapDelete("/location/{Id}", Destinations.Delete);
+app.MapGet("/hotels", Hotels.GetAll);
 app.Run();
 
 //void
@@ -77,7 +78,7 @@ async Task db_reset_to_default(Config config)
   name varchar(100) NOT NULL, 
   address VARCHAR(255) NOT NULL,
   price_class INT NOT NULL,
-  rooms INT NOT NULL, 
+   INT NOT NULL, 
   breakfast BOOL NOT NULL DEFAULT FALSE
   );     
 
