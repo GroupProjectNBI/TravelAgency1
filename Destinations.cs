@@ -12,26 +12,26 @@ class Destinations
   {
 
     if (string.IsNullOrWhiteSpace(UserInput))
-    throw new ArgumentException("You must enter a city name."); // Forces the user to type in city and not country
+      throw new ArgumentException("You must enter a city name."); // Prevents user from invalid (empty) input
 
 
     List<GetAll_Data> result = new();
-
-    string searchValue = $"%{UserInput}%";
+    string searchValue = $"%{UserInput}%"; // Flexible search, exakt match not needed
 
 
     string query = @"SELECT Id, Country, City 
     FROM locations
     WHERE City LIKE @UserInput";
 
-   var parameters = new MySqlParameter[]
+    // Handles input as data not code, prevents harmful code.
+    var parameters = new MySqlParameter[]
    {
     new MySqlParameter (@"UserInput", searchValue)
 
    };
 
     using (var reader = await
-    MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query, parameters))
+    MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
     {
       while (reader.Read())
       {
@@ -46,10 +46,10 @@ class Destinations
 
     if (result.Count == 0) // Forces user to type in a city that exists in the database
       throw new ArgumentException("No city found matching your input. Please enter a valid city.");
-    
+
     return result;
-  } 
-  
+  }
+
 
   public record Get_Data(int Id, string Country, string City);
   public static async Task<Get_Data?>
@@ -59,7 +59,7 @@ class Destinations
     string query = "SELECT Id, Country, City FROM locations WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
-    MySqlHelper.ExecuteReaderAsync(config.ConnectionString, query, parameters))
+    MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
     {
       if (reader.Read())
       {
@@ -67,8 +67,8 @@ class Destinations
         result = new(reader.GetInt32(0), // ID
         reader.GetString(1), // Country
         reader.GetString(2)); // City
-         
-    
+
+
       }
       return result;
     }
@@ -85,7 +85,7 @@ class Destinations
       new("@country", user.Country),
       new("@city", user.City),
     };
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
   public static async Task
   Delete(int Id, Config config)
@@ -93,6 +93,6 @@ class Destinations
     string query = "DELETE FROM locations WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.ConnectionString, query, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
 }
