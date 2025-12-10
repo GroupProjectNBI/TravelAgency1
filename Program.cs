@@ -43,6 +43,7 @@ app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/location", Destinations.Post);
 app.MapDelete("/location/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
+app.MapGet("/hotel/{Id}", Hotels.Get);
 app.Run();
 
 //void

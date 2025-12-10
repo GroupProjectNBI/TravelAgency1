@@ -28,4 +28,28 @@ class Hotels
         }
         return result;
     }
+    public record Get_Data(string name, string address, int price_class, int rooms, bool breakfast);
+    public static async Task<Get_Data?>
+    Get(int Id, Config config)
+    {
+        Get_Data? result = null;
+        string query = "SELECT name, address, price_class,rooms, breakfast FROM Hotels WHERE Id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+        using (var reader = await
+        MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+        {
+            if (reader.Read())
+            {
+                result = new(
+                reader.GetString(0),
+                reader.GetString(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetBoolean(4)
+                );
+            }
+        }
+        return result;
+    }
+
 }
