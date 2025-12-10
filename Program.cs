@@ -91,6 +91,8 @@ async Task db_reset_to_default(Config config)
   date_of_birth DATE,
   password VARCHAR(256));
 
+  
+
 
 
 
@@ -98,7 +100,7 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS Hotels");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
