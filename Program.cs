@@ -44,6 +44,12 @@ app.MapPost("/location", Destinations.Post);
 app.MapDelete("/location/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotel/{Id}", Hotels.Get);
+
+app.MapGet("/rooms", Rooms.GetAll);
+app.MapGet("/rooms/{id}", Rooms.Get);
+app.MapGet("/hotel/{hotelId}/rooms", Rooms.GetByHotel);
+app.MapPost("/rooms", Rooms_Post_Handler);
+app.MapDelete("/rooms/{id}", Rooms.Delete);
 app.Run();
 
 //void
@@ -133,6 +139,22 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
     Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
     _ => Results.StatusCode(500)
+  };
+}
+
+static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
+{
+  var (status, roomId) = await Rooms.Post(room, config);
+  return status switch
+  {
+    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
+
+    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
+
+    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
+
+    _ => Results.StatusCode(500)
+
   };
 }
 
