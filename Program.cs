@@ -70,24 +70,16 @@ async Task db_reset_to_default(Config config)
   city VARCHAR (100)
   );
 
-  DELIMITER $$
-  CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
-  BEGIN
-    START TRANSACTION;
-
-    INSERT INTO password_request (`user`)
-    SELECT u.id
-    FROM users u
-    WHERE u.email = p_email;
-
-    IF ROW_COUNT() = 0 THEN
-      ROLLBACK;
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
-    END IF;
-
-    COMMIT;
-  END$$
-  DELIMITER ;
+  
+    CREATE TABLE Hotels
+  (
+  Id INT PRIMARY KEY AUTO_INCREMENT,
+  name varchar(100) NOT NULL, 
+  address VARCHAR(255) NOT NULL,
+  price_class INT NOT NULL,
+  rooms INT NOT NULL, 
+  breakfast BOOL NOT NULL DEFAULT FALSE
+  );     
 
   CREATE TABLE users
   (
@@ -96,12 +88,17 @@ async Task db_reset_to_default(Config config)
   first_name VARCHAR(50),
   last_name VARCHAR(100),
   date_of_birth DATE,
-  password VARCHAR(256))
+  password VARCHAR(256));
+
+
+
+
   """;
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS contries");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS Hotels");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
@@ -110,7 +107,6 @@ async Task db_reset_to_default(Config config)
 
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
-
 }
 static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
 {
@@ -126,7 +122,29 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
   };
 }
 
+// DELIMITER $$
+//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+//   BEGIN
+//     START TRANSACTION;
 
+// INSERT INTO password_request (`user`)
+//     SELECT u.id
+//     FROM users u
+//     WHERE u.email = p_email;
+
+// IF ROW_COUNT() = 0 THEN
+//   ROLLBACK;
+// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+// END IF;
+
+// COMMIT;
+// END$$
+//   DELIMITER ;
+
+// ALTER TABLE Hotels
+//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
+
+// floor INT NOT NULL, dddd
 //List<Users> UsersGet()
 //{
 // return Users;
