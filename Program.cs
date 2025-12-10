@@ -79,7 +79,7 @@ async Task db_reset_to_default(Config config)
   address VARCHAR(255) NOT NULL,
   price_class INT NOT NULL,
   has_breakfast BOOL NOT NULL DEFAULT FALSE,
-  FOREIGN KEY (location_id) REFERENCES locatin(id)
+  FOREIGN KEY (location_id) REFERENCES location(id)
   );
 
   CREATE TABLE rooms
