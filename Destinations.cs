@@ -5,7 +5,7 @@ using MySql.Data.MySqlClient;
 
 class Destinations
 {
-  public record GetAll_Data(int Id, string country, string city);
+  public record GetAll_Data(int Id, int country, string city);
 
   public static async Task<List<GetAll_Data>> Search(string UserInput, Config config)
 
@@ -19,9 +19,11 @@ class Destinations
     string searchValue = $"%{UserInput}%"; // Flexible search, exakt match not needed
 
 
-    string query = @"SELECT Id, Country, City 
+    string query = """
+    SELECT Id, CountryId AS Country, City 
     FROM locations
-    WHERE City LIKE @UserInput";
+    WHERE City LIKE @UserInput
+    """;
 
     // Handles input as data not code, prevents harmful code.
     var parameters = new MySqlParameter[]
@@ -37,7 +39,8 @@ class Destinations
       {
 
         result.Add(new(reader.GetInt32(0), // Id
-        reader.GetString(1), // Country
+                                           //reader.GetString(1), // Country
+        reader.GetInt32(0),
         reader.GetString(2)));// City
 
       }
