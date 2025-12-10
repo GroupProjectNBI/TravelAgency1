@@ -67,22 +67,6 @@ async Task db_reset_to_default(Config config)
   breakfast BOOL NOT NULL DEFAULT FALSE
   );     
 
-  /*
-  CREATE TABLE Floors 
-  (
-  FloorId NOT NULL, 
-
-  */
-  
-  CREATE TABLE Rooms
-  (
-   Id INT PRIMARY KEY AUTO_INCREMENT,
-   hotelsId INT NOT NULL,
-   how_many_beds INT NOT NULL, /* typeofroom*/
-   vacancy BOOL NOT NULL DEFAULT TRUE,
-   floor INT NOT NULL UNIQUE
-   );
-
   CREATE TABLE users
   (
   Id INT PRIMARY KEY AUTO_INCREMENT,
@@ -96,20 +80,16 @@ async Task db_reset_to_default(Config config)
   ALTER TABLE Hotels
   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
-  ALTER TABLE Rooms
-  ADD FOREIGN KEY (hotelsId) REFERENCES Hotels(Id);
 
   """;
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS Rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS Hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
-
 }
 static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
 {
