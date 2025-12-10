@@ -77,8 +77,6 @@ async Task db_reset_to_default(Config config)
   password VARCHAR(256));
 
 
-  ALTER TABLE Hotels
-  ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
 
   """;
@@ -123,6 +121,9 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
 // COMMIT;
 // END$$
 //   DELIMITER ;
+
+// ALTER TABLE Hotels
+//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
 
 //List<Users> UsersGet()
