@@ -93,7 +93,6 @@ async Task db_reset_to_default(Config config)
   price_per_night DECIMAL,
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );   
->>>>>>> main
 
   CREATE TABLE users
   (
