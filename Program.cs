@@ -40,12 +40,13 @@ app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.MapGet("/locations/{UserInput}", Destinations.Search);
-app.MapPost("/location", Destinations.Post);
-app.MapDelete("/location/{Id}", Destinations.Delete);
+app.MapPost("/locations", Destinations.Post);
+app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotel/{Id}", Hotels.Get);
 app.MapGet("/restaurants", Restaurants.GetAll);
-app.MapGet("/restaurant/{id}", Restaurants.Get);
+app.MapGet("/restaurants/{id}", Restaurants.Get);
+app.MapPost("/restaurants", Restaurants.Post);
 app.Run();
 
 //void
@@ -133,8 +134,7 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO locations VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db,
-    "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) " +
-    "VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
+    "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
 
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
