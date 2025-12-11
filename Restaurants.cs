@@ -191,6 +191,17 @@ class Restaurants
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
+    public static async Task<IResult>
+Delete(int Id, Config config)
+    {
+        string query = "DELETE FROM restaurants WHERE Id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+        var body = new { id = Id, message = "Delete successfully" };
+        return Results.Ok(body);
+    }
+
 
 
 }
