@@ -3,7 +3,7 @@ namespace TravelAgency;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
-public record UpdateHotel_hotel(
+public record UpdateHotel_hotel( // expected fiels for update
 
  int location_id,
  string name,
@@ -92,7 +92,7 @@ class Hotels
     new("@price_class", hotel.price_class),
 
   };
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters); // Used to update database
   }
 
 
@@ -104,6 +104,21 @@ class Hotels
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
+
   }
+  public static async Task<IResult> Put(int id, UpdateHotel_hotel hotel, Config config)
+  {
+    try
+    {
+      await UpdateHotel(id, hotel, config);
+      return Results.Ok(new { message = "Hotel updated successfully", id = id });
+    }
+    catch (Exception ex)
+    {
+      return Results.StatusCode(StatusCodes.Status500InternalServerError);
+    }
+  }
+
+
 }
 
