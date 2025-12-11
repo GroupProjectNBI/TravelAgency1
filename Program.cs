@@ -1,7 +1,7 @@
 global using MySql.Data.MySqlClient;
 using TravelAgency;
 
-Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
+Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(config);
 builder.Services.AddDistributedMemoryCache();
@@ -61,16 +61,6 @@ async Task db_reset_to_default(Config config)
   // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
-
-  CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(256) UNIQUE NOT NULL,
-  first_name VARCHAR(50),
-  last_name VARCHAR(100),
-  date_of_birth DATE,
-  password VARCHAR(256) NOT NULL
-  );
-
 
   /* adding a new table to the database : */
 
