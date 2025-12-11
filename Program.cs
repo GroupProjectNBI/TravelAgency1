@@ -50,10 +50,28 @@ app.Run();
 //void
 async Task db_reset_to_default(Config config)
 {
+
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
   /* adding a new table to the database : */
+
+
+  CREATE TABLE users
+  (
+  Id INT PRIMARY KEY AUTO_INCREMENT,
+  email VARCHAR(256) UNIQUE,
+  first_name VARCHAR(50),
+  last_name VARCHAR(100),
+  date_of_birth DATE,
+  password VARCHAR(256));
+  
   CREATE TABLE password_request
   (
   user INT REFERENCES users(id),
@@ -69,7 +87,7 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE locations
   (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  contryId INT REFERENCES contries(id),
+  contryId INT REFERENCES countries(id),
   city VARCHAR (100)
   );
 
@@ -95,14 +113,7 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );   
 
-  CREATE TABLE users
-  (
-  Id INT PRIMARY KEY AUTO_INCREMENT,
-  email VARCHAR(256) UNIQUE,
-  first_name VARCHAR(50),
-  last_name VARCHAR(100),
-  date_of_birth DATE,
-  password VARCHAR(256));
+  
 
   
 
@@ -111,17 +122,12 @@ async Task db_reset_to_default(Config config)
 
   """;
 
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
+
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `countries` (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `locations` VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO 'hotels' VALUES(id, name, adress, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
