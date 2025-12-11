@@ -3,6 +3,18 @@ namespace TravelAgency;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
+public record Updatehotel_hotel(
+
+ int location_id,
+ string name,
+ bool has_breakfast,
+ string address,
+ int price_class
+
+
+
+);
+
 class Hotels
 {
   public record GetAll_Data(string name, string address, int price_class, int rooms, bool breakfast);
@@ -51,12 +63,38 @@ class Hotels
     }
     return result;
   }
-  public static async Task
- DeleteHotel(int Id, Config config)
-  {
-    string query = "DELETE FROM hotels WHERE Id = @Id";
-    var parameters = new MySqlParameter[] { new("@Id", Id) };
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
-  }
 
+
+
+  public static async Task UpdateHotel(int Id, UpdateHotel_hotel hotel, Config config)
+
+  {
+    string updateSql = """
+    UPDATE hotels
+    SET 
+    location_id = @location_id,
+    name = @name,
+    has_breakfast = @has_breakfast,
+    address = @address,
+    price_class = @price_class
+    WHERE Id=@Id;
+    """;
+
+    var parameters = new MySqlParameter[]
+
+
+  {
+   new("@Id",Id),
+   new("@location_id", hotel.location_id),
+   new("@name",hotel.name),
+   new("@has_breakfast", hotel.has_breakfast),
+   new("@adress",hotel.adress),
+   new("@price_class",hotel.price_class),
+
+  };
+
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+
+  }
 }
