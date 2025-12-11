@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TravelAgency", "TravelAgency\TravelAgency.csproj", "{373504BE-05A5-CDE5-C13A-AD2CD27986F9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "travelagency", "travelagency.csproj", "{83C66C44-A309-4729-0739-F01DB27DED13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10,15 +10,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{373504BE-05A5-CDE5-C13A-AD2CD27986F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{373504BE-05A5-CDE5-C13A-AD2CD27986F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{373504BE-05A5-CDE5-C13A-AD2CD27986F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{373504BE-05A5-CDE5-C13A-AD2CD27986F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83C66C44-A309-4729-0739-F01DB27DED13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83C66C44-A309-4729-0739-F01DB27DED13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83C66C44-A309-4729-0739-F01DB27DED13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83C66C44-A309-4729-0739-F01DB27DED13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {BEF3FEC0-BBA0-4FA5-9562-CBA9518E706A}
+		SolutionGuid = {44B3854F-8C3D-4AE4-BF40-7017C795A48B}
 	EndGlobalSection
 EndGlobal
