@@ -21,7 +21,7 @@ app.MapDelete("/db", db_reset_to_default);
 app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
-app.MapDelete("/hotel/{Id}", Hotels.DeleteHotel);
+
 app.MapGet("/profile", Profile.Get);
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
@@ -45,6 +45,7 @@ app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
+app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
