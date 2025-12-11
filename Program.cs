@@ -76,14 +76,15 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE countries
   (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(100)
+  name VARCHAR(100) NOT NULL
   );
 
-  CREATE TABLE locations (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  country_id INT NOT NULL,
-  city VARCHAR(100),
-  FOREIGN KEY (country_id) REFERENCES countries(id)
+  CREATE TABLE locations
+  (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  countries_id INT NOT NULL,
+  city VARCHAR (100) NOT NULL,
+  FOREIGN KEY (countries_id) REFERENCES countries(id)
   );
 
   
@@ -100,9 +101,9 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   hotel_id INT NOT NULL,
-  name ENUM('Single','Double','Suite'),
-  capacity INT,
-  price_per_night DECIMAL(10,2),
+  name ENUM ('Single', 'Double', 'Suite'),
+  capacity INT NOT NULL,
+  price_per_night DECIMAL(10,2) NOT NULL,
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
@@ -118,19 +119,19 @@ async Task db_reset_to_default(Config config)
 
   """;
 
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+
+
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
-
-
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Linconfig.dborg', '1997-08-20', 'travelagency')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `countries` (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `locations` VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO locations VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db,
     "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
