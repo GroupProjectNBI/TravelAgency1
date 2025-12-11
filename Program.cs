@@ -40,13 +40,13 @@ app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.MapGet("/locations/{UserInput}", Destinations.Search);
-app.MapPost("/location", Destinations.Post);
-app.MapDelete("/location/{Id}", Destinations.Delete);
+app.MapPost("/locations", Destinations.Post);
+app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotel/{Id}", Hotels.Get);
 app.MapGet("/restaurants", Restaurants.GetAll);
-app.MapGet("/restaurant/{id}", Restaurants.Get);
-app.MapPost("/restaurant", Restaurants.Post);
+app.MapGet("/restaurants/{id}", Restaurants.Get);
+app.MapPost("/restaurants", Restaurants.Post);
 app.Run();
 
 //void
