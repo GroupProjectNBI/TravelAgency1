@@ -7,6 +7,7 @@ class Rooms
     public record GetAll_Data(int Id, int HotelId, string Name, int Capacity, decimal PricePerNight);
     public record Get_Data(int Id, int HotelId, string Name, int Capacity, decimal PricePerNight);
     public record Post_Args(int HotelId, string Name, int Capacity, decimal PricePerNight);
+    public record Put_Args(int HotelId, string Name, int Capacity, decimal PricePerNight);
 
     //get all rooms
     public static async Task<List<GetAll_Data>> GetAll(Config config)
@@ -167,6 +168,58 @@ class Rooms
         return Convert.ToInt32(newId);
 
 
+    }
+
+    public enum RoomUpdateStatus
+    {
+        success,
+        InvalidFormat,
+        NotFound,
+        HotelNotFound
+    }
+    public static async Task Put(int Hotelid, string Name, int Capacity, decimal PricePerNight)
+    {
+        //validation
+        if (RoomCreationStatus.HotelId <= 0 ||
+        string.IsNullOrWhiteSpace(room.Name) ||
+        room.Capacity <= 0 || room.PricePerNight)
+        {
+            return RoomUpdateStatus.InvalidFormat;
+        }
+
+        //validate that the hotel exists
+        string checkHotelQuery = "SELECT COUNT(*) FROM hotels WHERE id = @hotel_id";
+        var hotelParams = new MySqlParameter[]
+        {
+            new("@hotel_id", RoomCreationStatus.HotelId)
+        };
+
+        var hotelCountExists = await MySqlHelper.ExecuteScalarAsync(config.db, checkHotelQuery, hotelParams);
+        int hotelCount = Convert.ToInt32(hotelCountExists);
+
+        if (hotelCount == 0)
+        {
+            return RoomUpdateStatus.HotelNotFound;
+        }
+
+        //update room
+        string query = """
+        UPDATE rooms
+        SET hotel_id = @hotel_id
+        name = @name,
+        capacity = @capacity,
+        price_per_night = @price_per_night
+        WHERE id = @id
+        """;
+
+        var parameters = new MySqlParameter[]
+        {
+            new("@id", id),
+            new("@hotel_id", room.Hotelid),
+            new("@name", room.Name),
+            new("@capacity", room.Capacity),
+            new("@price_per_night", room.price_per_night)
+        };
     }
 
     public static async Task Delete(int id, Config config)

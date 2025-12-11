@@ -43,14 +43,25 @@ app.MapGet("/reset/{email}", Users.Reset);
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
+
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
+
+app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
+app.MapGet("/rooms", Rooms.GetAll);
+app.MapGet("/rooms/{id}", Rooms.Get);
+app.MapPost("/rooms", Rooms_Post_Handler);
+app.MapPut("/rooms", Rooms.Put);
+app.MapDelete("/rooms/{id}", Rooms.Delete);
+
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
+
+
 app.Run();
 
 //void
