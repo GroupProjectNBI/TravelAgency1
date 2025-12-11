@@ -51,12 +51,49 @@ class Hotels
     }
     return result;
   }
-  public static async Task
- DeleteHotel(int Id, Config config)
-  {
-    string query = "DELETE FROM hotels WHERE Id = @Id";
-    var parameters = new MySqlParameter[] { new("@Id", Id) };
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
-  }
+    public static async Task
+   DeleteHotel(int Id, Config config)
+    {
+        string query = "DELETE FROM hotels WHERE Id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
+  
+    record Post_Args
+        
+    (
+    int Id,
+    int LocationId,
+    string Name,
+    bool HasBreakfast,
+    string Address
+    );
+    static async Task<int> Post(Post_Args hotels, Config config)
 
+    {
+        string query = @"
+        INSERT INTO hotels (location_id, name, has_breakfast, address)
+        VALUES (@LocationId, @Name, @HasBreakfast, @Address);";
+
+        var parameters = new MySqlParameter[]
+        {
+        new("@LocationId", hotels.LocationId),
+        new("@Name", hotels.Name),
+        new("@HasBreakfast", hotels.HasBreakfast),
+        new("@Address", hotels.Address)
+        };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+
+        // Hämta ID för den nya raden
+        string idQuery = "SELECT LAST_INSERT_ID()";
+        var idObj = await MySqlHelper.ExecuteScalarAsync(config.db, idQuery);
+
+        return Convert.ToInt32(idObj);
+    }
 }
+
+
+
+
+

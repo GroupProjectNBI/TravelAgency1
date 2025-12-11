@@ -1,4 +1,5 @@
 global using MySql.Data.MySqlClient;
+using MySqlX.XDevAPI.Common;
 using TravelAgency;
 
 Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
@@ -16,29 +17,19 @@ app.UseSession();
 
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-//app.MapPost("/register", Users.Post);
+app.MapPost("/register", Users.Post);
 app.MapDelete("/db", db_reset_to_default);
-app.MapPost("/register", Users_Post_Handler);
 
 app.MapGet("/", () => "Hello world!");
 
 app.MapGet("/profile", Profile.Get);
-app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
-{
-  bool success = await Login.Post(credentials, config, ctx);
-
-  if (!success)
-  {
-    return Results.Json(
-    new { message = "Unvalid credentials" },
-    statusCode: StatusCodes.Status401Unauthorized);
-  }
-
-  return Results.Ok(new { message = "Login successful" });
-});
+app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
-app.MapGet("/reset/{email}", Users.Reset);
+
+//app.MapPost("/location", Locations.Post);
+
+//Hämta alla hotell 
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
@@ -52,6 +43,39 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 app.Run();
+
+async Task InitializeDatabase( Config config)
+{
+  string createLocations = @"
+    CREATE TABLE IF NOT EXISTS locations
+    (
+        Id INT PRIMARY KEY AUTO_INCREMENT,
+        City VARCHAR(100) NOT NULL,
+        Description TEXT
+    );";
+
+  string createCulinaryExpreriences = @"
+    CREATE TABLE IF NOT EXISTS culinary_experiences
+    (
+        Id INT PRIMARY KEY AUTO_INCREMENT,
+        LocationId INT NOT NULL,
+        Name VARCHAR(255) NOT NULL,
+        FOREIGN KEY (LocationId) REFERENCES locations(Id)
+    );";
+  string createHotels = @"
+CREATE TABLE IF NOT EXISTS hotels
+(
+    Id INT PRIMARY KEY AUTO_INCREMENT,
+    location_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    has_breakfast BOOLEAN NOT NULL,
+    address VARCHAR(255),
+    FOREIGN KEY (location_id) REFERENCES locations(Id)
+);";
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, createLocations);
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, createCulinaryExpreriences);
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, createHotels);
+}
 
 //void
 async Task db_reset_to_default(Config config)
@@ -155,45 +179,10 @@ async Task db_reset_to_default(Config config)
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
-static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
-{
-  var (status, userId) = await Users.Post(user, config);
-  return status switch
 
-  {
-    Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
-    Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
-    Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
-    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
-    _ => Results.StatusCode(500)
-  };
-}
-
-// DELIMITER $$
-//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
-//   BEGIN
-//     START TRANSACTION;
-
-// INSERT INTO password_request (`user`)
-//     SELECT u.id
-//     FROM users u
-//     WHERE u.email = p_email;
-
-// IF ROW_COUNT() = 0 THEN
-//   ROLLBACK;
-// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
-// END IF;
-
-// COMMIT;
-// END$$
-//   DELIMITER ;
-
-// ALTER TABLE Hotels
-//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
-
-// floor INT NOT NULL, dddd
 //List<Users> UsersGet()
 //{
 // return Users;
 //}
 //Users? UsersGetById(int Id)
+// Test
