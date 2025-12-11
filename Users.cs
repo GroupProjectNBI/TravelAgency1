@@ -194,4 +194,5 @@ class Users
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
+
 }
