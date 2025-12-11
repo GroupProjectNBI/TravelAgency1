@@ -52,7 +52,8 @@ class Restaurants
     }
     public record Post_Args(int location_id, string name, bool is_veggie_friendly, bool is_fine_dining, bool is_wine_focused);
 
-    public static async Task<IResult> Post(Post_Args restaurant, Config config)
+    public static async Task<IResult>
+    Post(Post_Args restaurant, Config config)
     {
         // Simple validation of the object
         if (string.IsNullOrWhiteSpace(restaurant.name))
@@ -107,4 +108,89 @@ class Restaurants
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
+    public static async Task<IResult>
+    Put(int id, Post_Args restaurant, Config config)
+    {
+        if (string.IsNullOrWhiteSpace(restaurant.name))
+            return Results.BadRequest(new { message = "Name is required" });
+
+        if (restaurant.location_id <= 0)
+            return Results.BadRequest(new { message = "Invalid location_id" });
+
+        // Kontrollera att location finns
+        var locExists = await MySqlHelper.ExecuteScalarAsync(config.db,
+            "SELECT COUNT(1) FROM locations WHERE id = @id",
+            new MySqlParameter[] { new("@id", restaurant.location_id) });
+
+        if (Convert.ToInt32(locExists) == 0)
+            return Results.BadRequest(new { message = "location_id does not exist" });
+
+        // Kontrollera att restaurangen som ska uppdateras finns
+        var restExists = await MySqlHelper.ExecuteScalarAsync(config.db,
+            "SELECT COUNT(1) FROM restaurants WHERE id = @id",
+            new MySqlParameter[] { new("@id", id) });
+
+        if (Convert.ToInt32(restExists) == 0)
+            return Results.NotFound(new { message = "Restaurant not found" });
+
+        try
+        {
+            string updateSql = """
+            UPDATE restaurants
+            SET
+              location_id = @location_id,
+              name = @name,
+              is_veggie_friendly = @veggie_friendly,
+              is_fine_dining = @fine_dining,
+              is_wine_focused = @wine_focused
+            WHERE id = @id;
+            """;
+
+            var parameters = new MySqlParameter[]
+  {
+            new("@location_id", restaurant.location_id),
+            new("@name", restaurant.name),
+            new("@veggie_friendly", restaurant.is_veggie_friendly),
+            new("@fine_dining", restaurant.is_fine_dining),
+            new("@wine_focused", restaurant.is_wine_focused),
+            new("@id", id)
+  };
+
+
+            int affected = await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+            if (affected == 0)
+            {
+                var existsObj = await MySqlHelper.ExecuteScalarAsync(config.db,
+                    "SELECT COUNT(1) FROM restaurants WHERE id = @id",
+                    new MySqlParameter[] { new MySqlParameter("@id", id) });
+
+                if (existsObj == null || existsObj == DBNull.Value)
+                {
+
+                    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+                }
+
+                long count = Convert.ToInt64(existsObj);
+                if (count == 0)
+                {
+                    return Results.NotFound(new { message = "Restaurant not found" });
+                }
+                else
+                {
+                    return Results.NoContent();
+                }
+            }
+
+
+            var body = new { id = id, message = "Updated successfully" };
+            return Results.Ok(body);
+        }
+        catch (Exception ex)
+        {
+            // 
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+
 }

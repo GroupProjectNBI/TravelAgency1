@@ -43,10 +43,11 @@ app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
-app.MapGet("/hotel/{Id}", Hotels.Get);
+app.MapGet("/hotels/{Id}", Hotels.Get);
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
+app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.Run();
 
 //void
