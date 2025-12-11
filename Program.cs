@@ -47,6 +47,7 @@ app.MapGet("/hotel/{Id}", Hotels.Get);
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurant/{id}", Restaurants.Get);
 app.MapPost("/restaurant", Restaurants.Post);
+app.MapPut("/restaurant/{id}", Restaurants.Put);
 app.Run();
 
 //void
