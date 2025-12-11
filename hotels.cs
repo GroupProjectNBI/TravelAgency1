@@ -102,7 +102,7 @@ class Hotels
     string query = "DELETE FROM hotels WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
   }
 }
