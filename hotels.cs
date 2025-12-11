@@ -3,7 +3,7 @@ namespace TravelAgency;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
-public record Updatehotel_hotel(
+public record UpdateHotel_hotel(
 
  int location_id,
  string name,
@@ -84,17 +84,26 @@ class Hotels
 
 
   {
-   new("@Id",Id),
-   new("@location_id", hotel.location_id),
-   new("@name",hotel.name),
-   new("@has_breakfast", hotel.has_breakfast),
-   new("@adress",hotel.adress),
-   new("@price_class",hotel.price_class),
+    new("@Id", Id),
+    new("@location_id", hotel.location_id),
+    new("@name", hotel.name),
+    new("@has_breakfast", hotel.has_breakfast),
+    new("@address", hotel.address),
+    new("@price_class", hotel.price_class),
 
   };
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+  }
 
+
+  public static async Task
+   DeleteHotel(int Id, Config config)
+  {
+    string query = "DELETE FROM hotels WHERE Id = @Id";
+    var parameters = new MySqlParameter[] { new("@Id", Id) };
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
 
   }
 }
+
