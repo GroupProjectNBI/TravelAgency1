@@ -96,6 +96,7 @@ app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
+app.MapGet("/bookings/{booking_id}/meals", Bookings_Get_Meals_Handler);
 
 app.Run();
 
@@ -346,6 +347,24 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
   {
     var bookings = await Bookings.Get_All(config);
     return Results.Ok(bookings);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+// Program.cs
+static async Task<IResult> Bookings_Get_Meals_Handler(int booking_id, Config config)
+{
+  try
+  {
+    var meals = await Bookings.Get_Meals(booking_id, config);
+
+    if (meals.Count == 0)
+    {
+      return Results.NotFound(new { Message = $"No meals found for booking ID {booking_id}." });
+    }
+    return Results.Ok(meals);
   }
   catch (Exception)
   {
