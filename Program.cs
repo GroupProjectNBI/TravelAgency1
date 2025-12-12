@@ -99,6 +99,37 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 app.Run();
 
+static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
+{
+  var (status, roomId) = await Rooms.Post(room, config);
+  return status switch
+  {
+    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
+
+    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
+
+    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
+
+    _ => Results.StatusCode(500)
+
+  };
+}
+
+static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
+{
+  var status = await Rooms.Put(id, room, config);
+
+  return status switch
+  {
+    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
+    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
+    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
+    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
+    _ => Results.StatusCode(500)
+  };
+}
+
+
 //void
 async Task db_reset_to_default(Config config)
 {
@@ -151,9 +182,11 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   hotel_id INT NOT NULL,
+  room_number INT NOT NULL,
   name ENUM ('Single', 'Double', 'Suite'),
   capacity INT NOT NULL,
   price_per_night DECIMAL(10,2) NOT NULL,
+  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
