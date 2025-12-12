@@ -3,15 +3,6 @@ namespace TravelAgency;
 using System.Text.RegularExpressions;
 using MySql.Data.MySqlClient;
 
-public record UpdateHotel_hotel( // expected fiels for update
-
- int location_id,
- string name,
- bool has_breakfast,
- string address,
- int price_class
-);
-
 class Hotels
 {
   public record GetAll_Data(string name, string address, int price_class, bool breakfast);
@@ -94,7 +85,14 @@ class Hotels
     return Convert.ToInt32(idObj);
   }
 
+  public record UpdateHotel_hotel( // expected fiels for update
 
+   int location_id,
+   string name,
+   bool has_breakfast,
+   string address,
+   int price_class
+  );
   public static async Task UpdateHotel(int Id, UpdateHotel_hotel hotel, Config config)
 
   {
