@@ -14,15 +14,23 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 app.UseSession();
 
+// endpoints for users
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-//app.MapPost("/register", Users.Post);
-app.MapDelete("/db", db_reset_to_default);
+// app.MapPost("/register", Users.Post);
 app.MapPost("/register", Users_Post_Handler);
 
+// reset all the tables for the databse
+app.MapDelete("/db", db_reset_to_default);
+
+// root enpoint ony sends hello world back.
 app.MapGet("/", () => "Hello world!");
 
+// later use
 app.MapGet("/profile", Profile.Get);
+
+
+// endpoints for login
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
   bool success = await Login.Post(credentials, config, ctx);
@@ -36,30 +44,42 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 
   return Results.Ok(new { message = "Login successful" });
 });
+// app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
+
+// enpoint for reset password
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
+
+//app.MapPost("/location", Locations.Post);
+
+//Hämta alla hotell 
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
+// endpoint for locations use later
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
+
+// endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
-app.MapPut("/hotels/{id}", Hotels.Put);
+app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
+app.MapPut("/hotels/{id}", Hotels.Put);
+
+// endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
+
+
 app.Run();
 
 //void
 async Task db_reset_to_default(Config config)
 {
-
-
-  // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
 
@@ -182,9 +202,14 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
 // ALTER TABLE Hotels
 //   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
-// floor INT NOT NULL, dddd
+
+// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+//, NOW() + INTERVAL 1 DAY
+
+
 //List<Users> UsersGet()
 //{
 // return Users;
 //}
 //Users? UsersGetById(int Id)
+// Test
