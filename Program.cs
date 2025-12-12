@@ -64,7 +64,9 @@ app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
 app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
+app.MapPut("/hotels/{id}", Hotels.Put);
 
+//endpoints for rooms
 app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
 app.MapGet("/rooms", Rooms.GetAll);
 app.MapGet("/rooms/{id}", Rooms.Get);
