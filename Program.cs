@@ -44,45 +44,9 @@ app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 app.Run();
 
-async Task InitializeDatabase( Config config)
-{
-  string createLocations = @"
-    CREATE TABLE IF NOT EXISTS locations
-    (
-        Id INT PRIMARY KEY AUTO_INCREMENT,
-        City VARCHAR(100) NOT NULL,
-        Description TEXT
-    );";
-
-  string createCulinaryExpreriences = @"
-    CREATE TABLE IF NOT EXISTS culinary_experiences
-    (
-        Id INT PRIMARY KEY AUTO_INCREMENT,
-        LocationId INT NOT NULL,
-        Name VARCHAR(255) NOT NULL,
-        FOREIGN KEY (LocationId) REFERENCES locations(Id)
-    );";
-  string createHotels = @"
-CREATE TABLE IF NOT EXISTS hotels
-(
-    Id INT PRIMARY KEY AUTO_INCREMENT,
-    location_id INT NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    has_breakfast BOOLEAN NOT NULL,
-    address VARCHAR(255),
-    FOREIGN KEY (location_id) REFERENCES locations(Id)
-);";
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, createLocations);
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, createCulinaryExpreriences);
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, createHotels);
-}
-
 //void
 async Task db_reset_to_default(Config config)
 {
-
-
-  // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
 
@@ -176,6 +140,8 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+
+
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
