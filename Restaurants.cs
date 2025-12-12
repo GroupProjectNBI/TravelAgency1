@@ -99,11 +99,11 @@ class Restaurants
             var body = new { id = newId, message = "Created Successfully" };
             return Results.Json(body, statusCode: StatusCodes.Status201Created);
         }
-        catch (MySql.Data.MySqlClient.MySqlException mex)
+        catch (MySql.Data.MySqlClient.MySqlException)
         {
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
@@ -185,7 +185,7 @@ class Restaurants
             var body = new { id = id, message = "Updated successfully" };
             return Results.Ok(body);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // 
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
