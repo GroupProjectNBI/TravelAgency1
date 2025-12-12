@@ -78,7 +78,6 @@ app.MapPost("/rooms", Rooms_Post_Handler);
 app.MapPut("/rooms/{id}", Rooms_Put_Handler);
 app.MapDelete("/rooms/{id}", Rooms.Delete);
 
-
 // endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
@@ -99,6 +98,37 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 
 app.Run();
+
+static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
+{
+  var (status, roomId) = await Rooms.Post(room, config);
+  return status switch
+  {
+    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
+
+    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
+
+    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
+
+    _ => Results.StatusCode(500)
+
+  };
+}
+
+static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
+{
+  var status = await Rooms.Put(id, room, config);
+
+  return status switch
+  {
+    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
+    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
+    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
+    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
+    _ => Results.StatusCode(500)
+  };
+}
+
 
 //void
 async Task db_reset_to_default(Config config)
@@ -156,7 +186,6 @@ async Task db_reset_to_default(Config config)
   name ENUM ('Single', 'Double', 'Suite'),
   capacity INT NOT NULL,
   price_per_night DECIMAL(10,2) NOT NULL,
-  
   UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
@@ -189,20 +218,46 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
 
+  CREATE TABLE bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  location_id INT NOT NULL,
+  hotel_id INT NOT NULL,
+  package_id INT NOT NULL,
+  check_in DATE NOT NULL,
+  check_out DATE NOT NULL,
+  guests INT NOT NULL,
+  rooms INT NOT NULL,
+  status ENUM('pending','confirmed','cancelled'),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (location_id) REFERENCES locations(id),
+  FOREIGN KEY (hotel_id) REFERENCES hotels(id),
+  FOREIGN KEY (package_id) REFERENCES packages(id)
+  );
+
+  CREATE TABLE booking_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bookings_id INT NOT NULL,
+  date DATE,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (bookings_id) REFERENCES bookings(id)
+  );
 
   """;
 
-
-
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
@@ -268,36 +323,6 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
     Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
-    _ => Results.StatusCode(500)
-  };
-}
-
-static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
-{
-  var (status, roomId) = await Rooms.Post(room, config);
-  return status switch
-  {
-    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
-
-    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
-
-    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
-
-    _ => Results.StatusCode(500)
-
-  };
-}
-
-static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
-{
-  var status = await Rooms.Put(id, room, config);
-
-  return status switch
-  {
-    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
-    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
-    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
-    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
     _ => Results.StatusCode(500)
   };
 }
