@@ -10,7 +10,6 @@ public record UpdateHotel_hotel( // expected fiels for update
  bool has_breakfast,
  string address,
  int price_class
-
 );
 
 class Hotels
@@ -61,16 +60,6 @@ class Hotels
     }
     return result;
   }
-
-
-  public static async Task
-     DeleteHotel(int Id, Config config)
-  {
-    string query = "DELETE FROM hotels WHERE Id = @Id";
-    var parameters = new MySqlParameter[] { new("@Id", Id) };
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
-  }
-
 
   public record Post_Args
 
@@ -125,7 +114,6 @@ class Hotels
 
     var parameters = new MySqlParameter[]
 
-
   {
     new("@Id", Id),
     new("@location_id", hotel.location_id),
@@ -151,7 +139,6 @@ class Hotels
     }
   }
 
-
   public static async Task
    DeleteHotel(int Id, Config config)
   {
@@ -159,9 +146,6 @@ class Hotels
     var parameters = new MySqlParameter[] { new("@Id", Id) };
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
-
-
   }
-
 }
 
