@@ -52,7 +52,7 @@ app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
 app.MapGet("/rooms", Rooms.GetAll);
 app.MapGet("/rooms/{id}", Rooms.Get);
 app.MapPost("/rooms", Rooms_Post_Handler);
-app.MapPut("/rooms", Rooms.Put);
+app.MapPut("/rooms/{id}", Rooms_Put_Handler);
 app.MapDelete("/rooms/{id}", Rooms.Delete);
 
 app.MapGet("/restaurants", Restaurants.GetAll);
@@ -119,9 +119,12 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   hotel_id INT NOT NULL,
+  room_number INT NOT NULL,
   name ENUM ('Single', 'Double', 'Suite'),
   capacity INT NOT NULL,
   price_per_night DECIMAL(10,2) NOT NULL,
+  
+  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
@@ -183,6 +186,20 @@ static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config confi
 
     _ => Results.StatusCode(500)
 
+  };
+}
+
+static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
+{
+  var status = await Rooms.Put(id, room, config);
+
+  return status switch
+  {
+    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
+    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
+    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
+    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
+    _ => Results.StatusCode(500)
   };
 }
 

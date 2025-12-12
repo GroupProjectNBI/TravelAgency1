@@ -4,8 +4,8 @@ using MySql.Data.MySqlClient;
 
 class Rooms
 {
-    public record GetAll_Data(int Id, int HotelId, string Name, int Capacity, decimal PricePerNight);
-    public record Get_Data(int Id, int HotelId, string Name, int Capacity, decimal PricePerNight);
+    public record GetAll_Data(int Id, int HotelId, int RoomNumber, string Name, int Capacity, decimal PricePerNight);
+    public record Get_Data(int Id, int HotelId, int RoomNumber, string Name, int Capacity, decimal PricePerNight);
     public record Post_Args(int HotelId, string Name, int Capacity, decimal PricePerNight);
     public record Put_Args(int HotelId, string Name, int Capacity, decimal PricePerNight);
 
@@ -14,7 +14,7 @@ class Rooms
     {
         List<GetAll_Data> result = new();
         string query = """
-        SELECT id, hotel_id, name, capacity, price_per_night
+        SELECT id, hotel_id, room_number, name, capacity, price_per_night
         FROM rooms
         """;
 
@@ -24,12 +24,12 @@ class Rooms
             {
                 result.Add(
                     new GetAll_Data(
-                        reader.GetInt32(0),
-                        reader.GetInt32(1),
-                        reader.GetString(2),
-                        reader.GetInt32(3),
-                        reader.GetDecimal(4)
-
+                        reader.GetInt32(0), //id
+                        reader.GetInt32(1), //hotel_id
+                        reader.GetInt32(2), //room_number
+                        reader.GetString(3), //name
+                        reader.GetInt32(4), //capacity
+                        reader.GetDecimal(5) //price_per_night
                     )
 
                 );
@@ -44,7 +44,7 @@ class Rooms
         Get_Data? result = null;
 
         string query = """
-        SELECT id, hotel_id, name, capacity, price_per_night
+        SELECT id, hotel_id, room_number, name, capacity, price_per_night
         FROM rooms
         WHERE id = @id
         """;
@@ -58,11 +58,13 @@ class Rooms
         {
             if (reader.Read())
             {
-                result = new Get_Data(reader.GetInt32(0),
-                    reader.GetInt32(1),
-                    reader.GetString(2),
-                    reader.GetInt32(3),
-                    reader.GetDecimal(4)
+                result = new Get_Data(
+                        reader.GetInt32(0), //id
+                        reader.GetInt32(1), //hotel_id
+                        reader.GetInt32(2), //room_number
+                        reader.GetString(3), //name
+                        reader.GetInt32(4), //capacity
+                        reader.GetDecimal(5) //price_per_night
                 );
             }
         }
@@ -76,7 +78,7 @@ class Rooms
         List<GetAll_Data> result = new();
 
         string query = """
-        SELECT id, hotel_id, name, capacity, price_per_night
+        SELECT id, hotel_id, room_number, name, capacity, price_per_night
         FROM rooms
         WHERE hotel_id = @hotel_id
         """;
@@ -92,11 +94,12 @@ class Rooms
             {
                 result.Add(
                     new GetAll_Data(
-                        reader.GetInt32(0),
-                        reader.GetInt32(1),
-                        reader.GetString(2),
-                        reader.GetInt32(3),
-                        reader.GetDecimal(4)
+                        reader.GetInt32(0), //id
+                        reader.GetInt32(1), //hotel_id
+                        reader.GetInt32(2), //room_number
+                        reader.GetString(3), //name
+                        reader.GetInt32(4), //capacity
+                        reader.GetDecimal(5) //price_per_night
                     )
                 );
             }
@@ -124,10 +127,10 @@ class Rooms
             return (RoomCreationStatus.InvalidFormat, null);
         }
 
-        string[] allowedNames = { "Single", "Double", "Suit" };
+        string[] allowedNames = { "Single", "Double", "Suite" };
         if (!allowedNames.Contains(room.Name))
         {
-            return RoomCreationStatus.InvalidFormat;
+            return (RoomCreationStatus.InvalidFormat, null);
         }
 
         string checkHotelQuery = """
@@ -149,49 +152,77 @@ class Rooms
             return (RoomCreationStatus.HotelNotFound, null);
         }
 
+        string nextNumberQuery = """
+            SELECT COALESCE(MAX(room_number), 100) +1
+            FROM rooms
+            WHERE hotel_id = @hotel_id
+        """;
 
+        var nextRoom = await MySqlHelper.ExecuteScalarAsync(
+            config.db,
+            nextNumberQuery,
+            new MySqlParameter[] { new("@hotel_id", room.HotelId) }
+        );
+
+        int nextRoomNumber = Convert.ToInt32(nextRoom);
         string query = """
-        INSERT INTO rooms(hotel_id, name, capacity, price_per_night)
-        VALUES (@hotel_id, @name, @capacity, @price_per_night);
+        INSERT INTO rooms(hotel_id, room_number, name, capacity, price_per_night)
+        VALUES (@hotel_id, @room_number, @name, @capacity, @price_per_night);
         SELECT LAST_INSERT_ID();
         """;
 
         var parameters = new MySqlParameter[]
         {
             new("@hotel_id", room.HotelId),
+            new("@room_number", nextRoomNumber),
             new("@name", room.Name),
             new("@capacity", room.Capacity),
             new("@price_per_night", room.PricePerNight)
         };
 
         var newId = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
-        return Convert.ToInt32(newId);
+        int roomId = Convert.ToInt32(newId);
+
+        return (RoomCreationStatus.Success, roomId);
 
 
     }
 
     public enum RoomUpdateStatus
     {
-        success,
+        Success,
         InvalidFormat,
         NotFound,
         HotelNotFound
     }
-    public static async Task Put(int Hotelid, string Name, int Capacity, decimal PricePerNight)
+    public static async Task<RoomUpdateStatus>
+    Put(int id, Put_Args room, Config config)
     {
         //validation
-        if (RoomCreationStatus.HotelId <= 0 ||
+        if (id <= 0 ||
+        room.HotelId <= 0 ||
         string.IsNullOrWhiteSpace(room.Name) ||
-        room.Capacity <= 0 || room.PricePerNight)
+        room.Capacity <= 0 ||
+        room.PricePerNight <= 0)
         {
             return RoomUpdateStatus.InvalidFormat;
         }
 
+        string[] allowedNames = { "Single", "Double", "Suite" };
+        if (!allowedNames.Contains(room.Name))
+        {
+            return RoomUpdateStatus.InvalidFormat;
+        }
         //validate that the hotel exists
-        string checkHotelQuery = "SELECT COUNT(*) FROM hotels WHERE id = @hotel_id";
+        string checkHotelQuery = """
+        SELECT COUNT(*) 
+        FROM hotels 
+        WHERE id = @hotel_id
+        """;
+
         var hotelParams = new MySqlParameter[]
         {
-            new("@hotel_id", RoomCreationStatus.HotelId)
+            new("@hotel_id", room.HotelId)
         };
 
         var hotelCountExists = await MySqlHelper.ExecuteScalarAsync(config.db, checkHotelQuery, hotelParams);
@@ -205,7 +236,7 @@ class Rooms
         //update room
         string query = """
         UPDATE rooms
-        SET hotel_id = @hotel_id
+        SET hotel_id = @hotel_id,
         name = @name,
         capacity = @capacity,
         price_per_night = @price_per_night
@@ -215,11 +246,20 @@ class Rooms
         var parameters = new MySqlParameter[]
         {
             new("@id", id),
-            new("@hotel_id", room.Hotelid),
+            new("@hotel_id", room.HotelId),
             new("@name", room.Name),
             new("@capacity", room.Capacity),
-            new("@price_per_night", room.price_per_night)
+            new("@price_per_night", room.PricePerNight)
         };
+
+        int affectedRows = await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+
+        if (affectedRows == 0)
+        {
+            return RoomUpdateStatus.NotFound;
+        }
+
+        return RoomUpdateStatus.Success;
     }
 
     public static async Task Delete(int id, Config config)
