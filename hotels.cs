@@ -33,7 +33,7 @@ class Hotels
   Get(int Id, Config config)
   {
     Get_Data? result = null;
-    string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels WHERE Id = @Id";
+    string query = "SELECT name, address, price_class, rooms, has_breakfast FROM hotels WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
@@ -59,34 +59,36 @@ class Hotels
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
     }
   
-    record Post_Args
+    public record Post_Args
         
     (
     int Id,
     int LocationId,
     string Name,
     bool HasBreakfast,
-    string Address
+    string Address,
+    int PriceClass
     );
-    static async Task<int> Post(Post_Args hotels, Config config)
+    public static async Task<int> Post(Post_Args hotels, Config config)
 
     {
         string query = @"
-        INSERT INTO hotels (location_id, name, has_breakfast, address)
-        VALUES (@LocationId, @Name, @HasBreakfast, @Address);";
+        INSERT INTO hotels (location_id, name, address, price_class, has_breakfast)
+        VALUES (@location_id, @name, @address, @price_class, @has_breakfast);";
 
         var parameters = new MySqlParameter[]
         {
-        new("@LocationId", hotels.LocationId),
-        new("@Name", hotels.Name),
-        new("@HasBreakfast", hotels.HasBreakfast),
-        new("@Address", hotels.Address)
+        new("@location_id", hotels.LocationId),
+        new("@name", hotels.Name),
+        new("@address", hotels.Address),
+        new("@price_class", hotels.PriceClass),
+        new("@has_breakfast", hotels.HasBreakfast)
         };
 
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
         // Hämta ID för den nya raden
-        string idQuery = "SELECT LAST_INSERT_ID()";
+        string idQuery = "SELECT last_insert_id()";
         var idObj = await MySqlHelper.ExecuteScalarAsync(config.db, idQuery);
 
         return Convert.ToInt32(idObj);

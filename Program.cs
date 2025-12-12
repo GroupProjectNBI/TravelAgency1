@@ -2,7 +2,7 @@ global using MySql.Data.MySqlClient;
 using MySqlX.XDevAPI.Common;
 using TravelAgency;
 
-Config config = new("server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency");
+Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton(config);
 builder.Services.AddDistributedMemoryCache();
@@ -36,6 +36,7 @@ app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
+app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
@@ -49,16 +50,6 @@ async Task db_reset_to_default(Config config)
 {
 
   string users_create = """ 
-
-  CREATE TABLE users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  email VARCHAR(256) UNIQUE NOT NULL,
-  first_name VARCHAR(50),
-  last_name VARCHAR(100),
-  date_of_birth DATE,
-  password VARCHAR(256) NOT NULL
-  );
-
 
   /* adding a new table to the database : */
 
