@@ -62,7 +62,7 @@ class Restaurants
         if (restaurant.location_id <= 0)
             return Results.BadRequest(new { message = "Invalid location_id" });
 
-        // Chack so the location id that is send in exist
+        // Check so the location id that is send in exist
         var exists = await MySqlHelper.ExecuteScalarAsync(config.db,
             "SELECT COUNT(1) FROM locations WHERE id = @id",
             new MySqlParameter[] { new("@id", restaurant.location_id) });
@@ -134,7 +134,7 @@ class Restaurants
             return Results.NotFound(new { message = "Restaurant not found" });
 
         try
-        { 
+        {
             string updateSql = """
             UPDATE restaurants
             SET
