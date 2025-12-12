@@ -77,6 +77,17 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
+// endpoints for packages
+app.MapPost("/packages_meals", package_meals.Post);
+
+
+// endpoint for packages 
+app.MapGet("/packages", Package.GetAll);
+app.MapGet("/packages/{Id}", Package.Get);
+app.MapPost("/packages", Package.Post);
+app.MapPut("/packages/{id}", Package.Put);
+app.MapDelete("/packages/{id}", Package.DeletePackage);
+
 
 app.Run();
 
@@ -148,11 +159,32 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
+  CREATE TABLE packages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  location_id INT NOT NULL,
+  name VARCHAR(100),
+  description VARCHAR (254),
+  package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
+  FOREIGN KEY (location_id) REFERENCES locations(id)
+  );
+
+  CREATE TABLE packages_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  package_id INT NOT NULL,
+  restaurant_id INT NOT NULL,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (package_id) REFERENCES packages(id),
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+  );
+
+
   """;
 
 
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
