@@ -79,6 +79,11 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
+// endpoints for packages
+app.MapPost("/packages_meals", package_meals.Post);
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
+
+
 // endpoint for packages 
 app.MapGet("/packages", Package.GetAll);
 app.MapGet("/packages/{Id}", Package.Get);
@@ -179,6 +184,7 @@ async Task db_reset_to_default(Config config)
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
   meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  day_offset TIMESTAMP
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
@@ -321,6 +327,19 @@ static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config
     _ => Results.StatusCode(500)
   };
 }
+static async Task<IResult> PackagesMeals_Get_All_Handler(Config config)
+{
+  try
+  {
+    var meals = await package_meals.Get_All(config);
+    return Results.Ok(meals);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
 
 // DELIMITER $$
 //   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))

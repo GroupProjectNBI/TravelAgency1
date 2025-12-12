@@ -8,7 +8,7 @@ class package_meals
 
 {
     //DELETE-method för att ta bort en rad i packages_meals
-        public static async Task Delete(int Id, Config config)
+    public static async Task Delete(int Id, Config config)
     {
         string query = "DELETE FROM packages_meals WHERE id = @Id";
         var parameters = new MySqlParameter[] { new("@Id", Id) };
@@ -17,8 +17,33 @@ class package_meals
     }
     // Record som beskriver indata när man lägger till en rad
     public record Post_Args(int package_id, int restaurant_id, string meal_type, int day_offset);
+    public record Meal_Data(int id, int package_id, int restaurant_id, string meal_type, int day_offset);
 
-    // Metod för att lägga till en rad i packages_meals
+    private static Meal_Data Read_Meal(MySqlDataReader reader)
+    {
+        return new Meal_Data(
+            id: reader.GetInt32(0),
+            package_id: reader.GetInt32(1),
+            restaurant_id: reader.GetInt32(2),
+            meal_type: reader.GetString(3),
+            day_offset: reader.GetInt32(4)
+        );
+    }
+    public static async Task<List<Meal_Data>> Get_All(Config config)
+    {
+        List<Meal_Data> meals = new();
+
+        string query = "SELECT id, package_id, restaurant_id, meal_type FROM packages_meals";
+
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query);
+
+        while (reader.Read())
+        {
+            meals.Add(Read_Meal(reader));
+        }
+
+        return meals;
+    }
     public static async Task<IResult> Post(Post_Args args, Config config)
 
     {
@@ -78,6 +103,5 @@ class package_meals
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
-
 }
 
