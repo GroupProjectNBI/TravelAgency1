@@ -78,6 +78,9 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 app.MapGet("/packages", Package.GetAll);
 app.MapGet("/packages/{Id}", Package.Get);
 app.MapPost("/packages", Package.Post);
+app.MapPut("/packages/{id}", Package.Put);
+app.MapDelete("/packages/{id}", Package.DeletePackage);
+
 
 app.Run();
 

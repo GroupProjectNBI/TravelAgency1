@@ -51,7 +51,6 @@ class Package
         }
         return result;
     }
-
     public record Post_Args(int location_id, string name, string description, int package_type);
     public static async Task<IResult>
     Post(Post_Args args, Config config)
@@ -112,5 +111,63 @@ class Package
     }
 
 
+    public record UpdatePackage_package( // expected fiels for update
 
+      int location_id,
+      string name,
+      string description,
+      int package_type
+     );
+
+
+
+    public static async Task UpdatePackage(int Id, UpdatePackage_package package, Config config)
+
+    {
+        string updateSql = """
+    UPDATE packages
+    SET 
+    location_id = @location_id,
+    name = @name,
+    description = @description,
+    package_type = @package_type
+    WHERE Id=@Id;
+    """;
+
+        var parameters = new MySqlParameter[]
+
+      {
+    new("@Id", Id),
+    new("@location_id", package.location_id),
+    new("@name", package.name),
+    new("@description", package.description),
+    new("@package_type", package.package_type),
+
+      };
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters); // Used to update database
+    }
+
+    public static async Task<IResult> Put(int id, UpdatePackage_package package, Config config)
+    {
+        try
+        {
+            await UpdatePackage(id, package, config);
+            return Results.Ok(new { message = "Package updated successfully", id = id });
+        }
+        catch (Exception)
+        {
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public static async Task
+     DeletePackage(int Id, Config config)
+    {
+        string query = "DELETE FROM packages WHERE Id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
 }
+
+
