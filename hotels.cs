@@ -128,7 +128,7 @@ class Hotels
       await UpdateHotel(id, hotel, config);
       return Results.Ok(new { message = "Hotel updated successfully", id = id });
     }
-    catch (Exception ex)
+    catch (Exception)
     {
       return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
