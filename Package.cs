@@ -10,7 +10,7 @@ class Package
     GetAll(Config config)
     {
         List<GetAll_Data> restult = new();
-        string get_all_query = "SELECT id,location_id,name, description, package_type FROM packages";
+        string get_all_query = "SELECT id, location_id, name, description, package_type FROM packages";
         using (var reader = await
         MySqlHelper.ExecuteReaderAsync(config.db, get_all_query))
         {
