@@ -94,7 +94,8 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
-
+//endpoint for bookings
+app.MapGet("/bookings", Bookings_Get_All_Handler);
 
 app.Run();
 
@@ -184,7 +185,7 @@ async Task db_reset_to_default(Config config)
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
   meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
-  day_offset TIMESTAMP
+  day_offset TIMESTAMP,
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
@@ -333,6 +334,18 @@ static async Task<IResult> PackagesMeals_Get_All_Handler(Config config)
   {
     var meals = await package_meals.Get_All(config);
     return Results.Ok(meals);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Bookings_Get_All_Handler(Config config)
+{
+  try
+  {
+    var bookings = await Bookings.Get_All(config);
+    return Results.Ok(bookings);
   }
   catch (Exception)
   {
