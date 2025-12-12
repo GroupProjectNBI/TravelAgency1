@@ -73,6 +73,9 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
+// endpoints for packages
+app.MapPost("/packages_meals", package_meals.Post);
+
 
 app.Run();
 
