@@ -1,5 +1,4 @@
 global using MySql.Data.MySqlClient;
-using MySqlX.XDevAPI.Common;
 using TravelAgency;
 
 Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
@@ -36,7 +35,7 @@ app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
-app.MapPut("/hotels/{id}", Hotels.Put);
+app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
@@ -131,6 +130,44 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+  // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+  //, NOW() + INTERVAL 1 DAY
+}
+static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
+{
+  var (status, userId) = await Users.Post(user, config);
+  return status switch
+
+  {
+    Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
+    Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
+    Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
+    Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
+    _ => Results.StatusCode(500)
+  };
+}
+
+// DELIMITER $$
+//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+//   BEGIN
+//     START TRANSACTION;
+
+// INSERT INTO password_request (`user`)
+//     SELECT u.id
+//     FROM users u
+//     WHERE u.email = p_email;
+
+// IF ROW_COUNT() = 0 THEN
+//   ROLLBACK;
+// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+// END IF;
+
+// COMMIT;
+// END$$
+//   DELIMITER ;
+
+// ALTER TABLE Hotels
+//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
 
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
