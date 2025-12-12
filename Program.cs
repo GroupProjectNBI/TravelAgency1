@@ -55,10 +55,14 @@ app.MapGet("/reset/{email}", Users.Reset);
 //Get all hotels
 //Add so you also can delete and update users/ GHERKIN?? 
 // endpoint for locations use later
-app.MapGet("/locations/{UserInput}", Destinations.Search);
-app.MapPost("/locations", Destinations.Post);
-app.MapDelete("/locations/{Id}", Destinations.Delete);
-
+//app.MapGet("/locations/{UserInput}", Destinations.Search); tillfällig
+//app.MapPost("/locations", Destinations.Post); tillfällig
+//app.MapDelete("/locations/{Id}", Destinations.Delete); tillfällig
+app.MapGet("/locations", Locations.Get_All); // new
+app.MapGet("/locations/search", Locations_Search_Handler); //new
+app.MapPost("/location", Locations_Post_Handler); //new
+app.MapGet("location/{id}", Locations_Get_Handler); //new
+app.MapDelete("/location/{id}", Locations_Delete_Handler); //new
 // endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
@@ -164,6 +168,51 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
+}
+
+static async Task<IResult> Locations_Search_Handler(string search, Config config)
+{
+  try
+
+  {
+    var result = await Locations.Search(search, config);
+    return Results.Ok(result);
+  }
+  catch (ArgumentException ex)
+  {
+    return Results.BadRequest(new { Message = ex.Message });
+  }
+}
+static async Task<IResult> Locations_Get_Handler(int id, Config config)
+{
+  var location = await Locations.Get(config, id);
+  if (location is null)
+  {
+    return Results.NotFound(new { Message = $"Location with ID {id} was not found." });
+  }
+  return Results.Ok(location);
+}
+static async Task<IResult> Locations_Post_Handler(Post_Location_Args args, Config config)
+{
+  try
+  {
+    int newId = await Locations.Post(args, config);
+    return Results.Created($"/location/{newId}", new { id = newId, Message = "Location created successfully." });
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Locations_Delete_Handler(int id, Config config)
+{
+  int affectedRows = await Locations.Delete(id, config);
+
+  if (affectedRows == 0)
+  {
+    return Results.NotFound(new { Message = $"Location with ID {id} was not found or could not be deleted." });
+  }
+  return Results.NoContent();
 }
 static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
 {
