@@ -14,41 +14,65 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 app.UseSession();
 
+// endpoints for users
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-app.MapPost("/register", Users.Post);
+// app.MapPost("/register", Users.Post);
+app.MapPost("/register", Users_Post_Handler);
 
+// reset all the tables for the databse
 app.MapDelete("/db", db_reset_to_default);
 
+// root enpoint ony sends hello world back.
 app.MapGet("/", () => "Hello world!");
 
+// later use
 app.MapGet("/profile", Profile.Get);
 
-app.MapPost("/login", Login.Post);
+
+// endpoints for login
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Json(
+    new { message = "Unvalid credentials" },
+    statusCode: StatusCodes.Status401Unauthorized);
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
+// app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
 
+// enpoint for reset password
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
+app.MapGet("/reset/{email}", Users.Reset);
 
 //app.MapPost("/location", Locations.Post);
 
 //Hämta alla hotell 
 //Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
+// endpoint for locations use later
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 
+// endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
 app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapPut("/hotels/{id}", Hotels.Put);
+
+// endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
-
-
 
 
 app.Run();
@@ -179,9 +203,9 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
 //   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
 
-  // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
-  //, NOW() + INTERVAL 1 DAY
-}
+// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+//, NOW() + INTERVAL 1 DAY
+
 
 //List<Users> UsersGet()
 //{

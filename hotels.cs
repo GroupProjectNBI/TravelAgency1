@@ -14,13 +14,13 @@ public record UpdateHotel_hotel( // expected fiels for update
 
 class Hotels
 {
-  public record GetAll_Data(string name, string address, int price_class, int rooms, bool breakfast);
+  public record GetAll_Data(string name, string address, int price_class, bool breakfast);
   public static async Task<List<GetAll_Data>>
 
   GetAll(Config config)
   {
     List<GetAll_Data> result = new();
-    string query = "SELECT name, address, price_class,rooms, has_breakfast FROM hotels ;";
+    string query = "SELECT name, address, price_class, has_breakfast FROM hotels ;";
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.db, query))
     {
@@ -30,19 +30,18 @@ class Hotels
         reader.GetString(0),
         reader.GetString(1),
         reader.GetInt32(2),
-        reader.GetInt32(3),
-        reader.GetBoolean(4)
+        reader.GetBoolean(3)
         ));
       }
     }
     return result;
   }
-  public record Get_Data(string name, string address, int price_class, int rooms, bool breakfast);
+  public record Get_Data(string name, string address, int price_class, bool breakfast);
   public static async Task<Get_Data?>
   Get(int Id, Config config)
   {
     Get_Data? result = null;
-    string query = "SELECT name, address, price_class, rooms, has_breakfast FROM hotels WHERE Id = @Id";
+    string query = "SELECT name, address, price_class, has_breakfast FROM hotels WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
@@ -53,8 +52,7 @@ class Hotels
         reader.GetString(0),
         reader.GetString(1),
         reader.GetInt32(2),
-        reader.GetInt32(3),
-        reader.GetBoolean(4)
+        reader.GetBoolean(3)
         );
       }
     }
@@ -95,7 +93,6 @@ class Hotels
 
     return Convert.ToInt32(idObj);
   }
-}
 
 
   public static async Task UpdateHotel(int Id, UpdateHotel_hotel hotel, Config config)
