@@ -96,6 +96,8 @@ app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
+app.MapPost("/bookings", Bookings_Post_Handler);
+app.MapGet("/bookings/{booking_id}/meals", Bookings_Get_Meals_Handler);
 
 app.Run();
 
@@ -237,6 +239,8 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages (id, location_id, name, description, package_type) VALUES (1, 1, 'Stockholm Weekend', 'A fun package in the capital', 'Veggie');");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, meal_type) VALUES (1, 1, 'Dinner');");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
@@ -351,6 +355,28 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
   {
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
+}
+// Program.cs
+static async Task<IResult> Bookings_Get_Meals_Handler(int booking_id, Config config)
+{
+  try
+  {
+    var meals = await Bookings.Get_Meals(booking_id, config);
+
+    if (meals.Count == 0)
+    {
+      return Results.NotFound(new { Message = $"No meals found for booking ID {booking_id}." });
+    }
+    return Results.Ok(meals);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Bookings_Post_Handler(Bookings.Post_Args args, Config config)
+{
+  return await Bookings.Post(args, config);
 }
 
 
