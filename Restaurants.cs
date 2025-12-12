@@ -62,7 +62,7 @@ class Restaurants
         if (restaurant.location_id <= 0)
             return Results.BadRequest(new { message = "Invalid location_id" });
 
-        // Chack so the location id that is send in exist
+        // Check so the location id that is send in exist
         var exists = await MySqlHelper.ExecuteScalarAsync(config.db,
             "SELECT COUNT(1) FROM locations WHERE id = @id",
             new MySqlParameter[] { new("@id", restaurant.location_id) });
@@ -99,11 +99,11 @@ class Restaurants
             var body = new { id = newId, message = "Created Successfully" };
             return Results.Json(body, statusCode: StatusCodes.Status201Created);
         }
-        catch (MySql.Data.MySqlClient.MySqlException mex)
+        catch (MySql.Data.MySqlClient.MySqlException)
         {
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
@@ -185,7 +185,7 @@ class Restaurants
             var body = new { id = id, message = "Updated successfully" };
             return Results.Ok(body);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // 
             return Results.StatusCode(StatusCodes.Status500InternalServerError);

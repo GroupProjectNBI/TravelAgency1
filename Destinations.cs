@@ -20,9 +20,9 @@ class Destinations
 
 
     string query = """
-    SELECT Id, CountryId AS Country, City 
+    SELECT Id, country_id, city 
     FROM locations
-    WHERE City LIKE @UserInput
+    WHERE city LIKE @UserInput
     """;
 
     // Handles input as data not code, prevents harmful code.
@@ -38,9 +38,8 @@ class Destinations
       while (reader.Read())
       {
 
-        result.Add(new(reader.GetInt32(0), // Id
-                                           //reader.GetString(1), // Country
-        reader.GetInt32(0),
+        result.Add(new(reader.GetInt32(0), // Id                                      
+        reader.GetInt32(1), // Country
         reader.GetString(2)));// City
 
       }
@@ -59,7 +58,7 @@ class Destinations
   Get(int Id, Config config)
   {
     Get_Data? result = null;
-    string query = "SELECT Id, Country, City FROM locations WHERE Id = @Id";
+    string query = "SELECT Id, country, city FROM locations WHERE Id = @Id";
     var parameters = new MySqlParameter[] { new("@Id", Id) };
     using (var reader = await
     MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))

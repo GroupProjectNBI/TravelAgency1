@@ -14,15 +14,22 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 app.UseSession();
 
+// endpoints for users
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
-//app.MapPost("/register", Users.Post);
-app.MapDelete("/db", db_reset_to_default);
+// app.MapPost("/register", Users.Post);
 app.MapPost("/register", Users_Post_Handler);
 
-app.MapGet("/", () => "Hello world!");
+// reset all the tables for the databse
+app.MapDelete("/db", db_reset_to_default);
 
+
+
+// later use
 app.MapGet("/profile", Profile.Get);
+
+
+// endpoints for login
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
   bool success = await Login.Post(credentials, config, ctx);
@@ -36,16 +43,26 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 
   return Results.Ok(new { message = "Login successful" });
 });
+// app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
+
+// enpoint for reset password
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
-//Lägg till så att man även kan ta bort användare och uppdatera, GHERKIN
+
+//app.MapPost("/location", Locations.Post);
+
+//Get all hotels
+//Add so you also can delete and update users/ GHERKIN?? 
+// endpoint for locations use later
 app.MapGet("/locations/{UserInput}", Destinations.Search);
 app.MapPost("/locations", Destinations.Post);
 app.MapDelete("/locations/{Id}", Destinations.Delete);
 
+// endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
+app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 
 app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
@@ -55,11 +72,25 @@ app.MapPost("/rooms", Rooms_Post_Handler);
 app.MapPut("/rooms/{id}", Rooms_Put_Handler);
 app.MapDelete("/rooms/{id}", Rooms.Delete);
 
+app.MapPut("/hotels/{id}", Hotels.Put);
+
+// endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
 app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
+
+// endpoints for packages
+app.MapPost("/packages_meals", package_meals.Post);
+
+
+// endpoint for packages 
+app.MapGet("/packages", Package.GetAll);
+app.MapGet("/packages/{Id}", Package.Get);
+app.MapPost("/packages", Package.Post);
+app.MapPut("/packages/{id}", Package.Put);
+app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 
 app.Run();
@@ -67,9 +98,6 @@ app.Run();
 //void
 async Task db_reset_to_default(Config config)
 {
-
-
-  // string db = "server=127.0.0.1;uid=travelagency;pwd=travelagency;database=travelagency";
 
   string users_create = """ 
 
@@ -138,11 +166,32 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
+  CREATE TABLE packages (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  location_id INT NOT NULL,
+  name VARCHAR(100),
+  description VARCHAR (254),
+  package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
+  FOREIGN KEY (location_id) REFERENCES locations(id)
+  );
+
+  CREATE TABLE packages_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  package_id INT NOT NULL,
+  restaurant_id INT NOT NULL,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (package_id) REFERENCES packages(id),
+  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+  );
+
+
   """;
 
 
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
@@ -154,7 +203,7 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO locations VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
 
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO `restaurants` (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
@@ -225,9 +274,14 @@ static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config
 // ALTER TABLE Hotels
 //   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
-// floor INT NOT NULL, dddd
+
+// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+//, NOW() + INTERVAL 1 DAY
+
+
 //List<Users> UsersGet()
 //{
 // return Users;
 //}
 //Users? UsersGetById(int Id)
+// Test
