@@ -134,7 +134,7 @@ class Restaurants
             return Results.NotFound(new { message = "Restaurant not found" });
 
         try
-        {
+        { 
             string updateSql = """
             UPDATE restaurants
             SET
