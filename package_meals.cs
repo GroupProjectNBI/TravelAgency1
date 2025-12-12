@@ -5,12 +5,22 @@ using MySql.Data.MySqlClient;
 
 class package_meals
 
+
 {
+    //DELETE-method för att ta bort en rad i packages_meals
+        public static async Task Delete(int Id, Config config)
+    {
+        string query = "DELETE FROM packages_meals WHERE id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
     // Record som beskriver indata när man lägger till en rad
     public record Post_Args(int package_id, int restaurant_id, string meal_type, int day_offset);
 
     // Metod för att lägga till en rad i packages_meals
     public static async Task<IResult> Post(Post_Args args, Config config)
+
     {
         // Validation: checks that the input is correct before inserting into the database, including:
         // 1) meal_type must be one of "Breakfast", "Lunch", or "Dinner" to prevent invalid meal entries,

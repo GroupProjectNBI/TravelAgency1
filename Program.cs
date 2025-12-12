@@ -88,6 +88,7 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
+app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 
 
 app.Run();
