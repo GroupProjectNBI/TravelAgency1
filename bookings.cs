@@ -55,7 +55,7 @@ decimal total_price
   public static async Task<IResult>
   Post(Post_Args bookings, Config config)
   {
-
+    // more validation that i am able to handle at the moment. 
 
     try
     {
