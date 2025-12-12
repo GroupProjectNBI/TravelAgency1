@@ -173,20 +173,68 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
 
+  CREATE TABLE bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  location_id INT NOT NULL,
+  hotel_id INT NOT NULL,
+  package_id INT NOT NULL,
+  check_in DATE NOT NULL,
+  check_out DATE NOT NULL,
+  guests INT NOT NULL,
+  rooms INT NOT NULL,
+  status ENUM('pending','confirmed','cancelled'),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (location_id) REFERENCES locations(id),
+  FOREIGN KEY (hotel_id) REFERENCES hotels(id),
+  FOREIGN KEY (package_id) REFERENCES packages(id)
+  );
+
+  CREATE TABLE booking_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bookings_id INT NOT NULL,
+  date DATE,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (bookings_id) REFERENCES bookings(id)
+  );
 
   """;
 
+  //   booking_meals(refererar bookings)
 
+  // packages_meals(refererar packages, restaurants)
 
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  // bookings(refererar users, locations, hotels, packages)
+
+  // rooms(refererar hotels)
+
+  // restaurants(refererar locations)
+
+  // packages(refererar locations)
+
+  // hotels(refererar locations)
+
+  // locations(refererar countries)
+
+  // password_request(refererar users)
+
+  // users
+
+  // countries
+
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
