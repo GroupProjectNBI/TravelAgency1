@@ -50,19 +50,13 @@ app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 
-//app.MapPost("/location", Locations.Post);
+// endpoints for locations
+app.MapGet("/locations", Locations.Get_All);
+app.MapGet("/locations/search", Locations_Search_Handler);
+app.MapPost("/location", Locations_Post_Handler);
+app.MapGet("location/{id}", Locations_Get_Handler);
+app.MapDelete("/location/{id}", Locations_Delete_Handler);
 
-//Get all hotels
-//Add so you also can delete and update users/ GHERKIN?? 
-// endpoint for locations use later
-//app.MapGet("/locations/{UserInput}", Destinations.Search); tillfällig
-//app.MapPost("/locations", Destinations.Post); tillfällig
-//app.MapDelete("/locations/{Id}", Destinations.Delete); tillfällig
-app.MapGet("/locations", Locations.Get_All); // new
-app.MapGet("/locations/search", Locations_Search_Handler); //new
-app.MapPost("/location", Locations_Post_Handler); //new
-app.MapGet("location/{id}", Locations_Get_Handler); //new
-app.MapDelete("/location/{id}", Locations_Delete_Handler); //new
 // endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
@@ -77,7 +71,6 @@ app.MapGet("/rooms/{id}", Rooms.Get);
 app.MapPost("/rooms", Rooms_Post_Handler);
 app.MapPut("/rooms/{id}", Rooms_Put_Handler);
 app.MapDelete("/rooms/{id}", Rooms.Delete);
-
 
 // endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
@@ -98,8 +91,13 @@ app.MapPost("/packages", Package.Post);
 app.MapPut("/packages/{id}", Package.Put);
 app.MapDelete("/packages/{id}", Package.DeletePackage);
 
+// endpoints for package meals
+app.MapPost("/packages_meals", package_meals.Post);
+
 
 app.Run();
+
+
 
 //void
 async Task db_reset_to_default(Config config)
@@ -157,7 +155,6 @@ async Task db_reset_to_default(Config config)
   name ENUM ('Single', 'Double', 'Suite'),
   capacity INT NOT NULL,
   price_per_night DECIMAL(10,2) NOT NULL,
-  
   UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
@@ -191,14 +188,40 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
 
+  CREATE TABLE bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  location_id INT NOT NULL,
+  hotel_id INT NOT NULL,
+  package_id INT NOT NULL,
+  check_in DATE NOT NULL,
+  check_out DATE NOT NULL,
+  guests INT NOT NULL,
+  rooms INT NOT NULL,
+  status ENUM('pending','confirmed','cancelled'),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (location_id) REFERENCES locations(id),
+  FOREIGN KEY (hotel_id) REFERENCES hotels(id),
+  FOREIGN KEY (package_id) REFERENCES packages(id)
+  );
+
+  CREATE TABLE booking_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bookings_id INT NOT NULL,
+  date DATE,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (bookings_id) REFERENCES bookings(id)
+  );
 
   """;
 
-
-
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
