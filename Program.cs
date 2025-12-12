@@ -50,19 +50,13 @@ app.MapDelete("/login", Login.Delete);
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 app.MapGet("/reset/{email}", Users.Reset);
 
-//app.MapPost("/location", Locations.Post);
+// endpoints for locations
+app.MapGet("/locations", Locations.Get_All);
+app.MapGet("/locations/search", Locations_Search_Handler);
+app.MapPost("/location", Locations_Post_Handler);
+app.MapGet("location/{id}", Locations_Get_Handler);
+app.MapDelete("/location/{id}", Locations_Delete_Handler);
 
-//Get all hotels
-//Add so you also can delete and update users/ GHERKIN?? 
-// endpoint for locations use later
-//app.MapGet("/locations/{UserInput}", Destinations.Search); tillfällig
-//app.MapPost("/locations", Destinations.Post); tillfällig
-//app.MapDelete("/locations/{Id}", Destinations.Delete); tillfällig
-app.MapGet("/locations", Locations.Get_All); // new
-app.MapGet("/locations/search", Locations_Search_Handler); //new
-app.MapPost("/location", Locations_Post_Handler); //new
-app.MapGet("location/{id}", Locations_Get_Handler); //new
-app.MapDelete("/location/{id}", Locations_Delete_Handler); //new
 // endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
@@ -85,10 +79,6 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
-// endpoints for packages
-app.MapPost("/packages_meals", package_meals.Post);
-
-
 // endpoint for packages 
 app.MapGet("/packages", Package.GetAll);
 app.MapGet("/packages/{Id}", Package.Get);
@@ -96,38 +86,12 @@ app.MapPost("/packages", Package.Post);
 app.MapPut("/packages/{id}", Package.Put);
 app.MapDelete("/packages/{id}", Package.DeletePackage);
 
+// endpoints for package meals
+app.MapPost("/packages_meals", package_meals.Post);
+
 
 app.Run();
 
-static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
-{
-  var (status, roomId) = await Rooms.Post(room, config);
-  return status switch
-  {
-    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
-
-    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
-
-    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
-
-    _ => Results.StatusCode(500)
-
-  };
-}
-
-static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
-{
-  var status = await Rooms.Put(id, room, config);
-
-  return status switch
-  {
-    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
-    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
-    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
-    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
-    _ => Results.StatusCode(500)
-  };
-}
 
 
 //void
@@ -249,15 +213,15 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
@@ -323,6 +287,36 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
     Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
+    _ => Results.StatusCode(500)
+  };
+}
+
+static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
+{
+  var (status, roomId) = await Rooms.Post(room, config);
+  return status switch
+  {
+    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
+
+    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
+
+    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
+
+    _ => Results.StatusCode(500)
+
+  };
+}
+
+static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
+{
+  var status = await Rooms.Put(id, room, config);
+
+  return status switch
+  {
+    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
+    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
+    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
+    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
     _ => Results.StatusCode(500)
   };
 }
