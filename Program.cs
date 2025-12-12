@@ -47,7 +47,7 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 app.MapDelete("/login", Login.Delete);
 
 // enpoint for reset password
-app.MapPatch("/newpassword/{temp_key}", Users.Patch);
+app.MapPatch("/newpassword/{temp_key}", Users_Patch_Handler);
 app.MapGet("/reset/{email}", Users.Reset);
 
 // endpoints for locations
@@ -299,6 +299,20 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
     Users.RegistrationStatus.InvalidFormat => Results.BadRequest(new { Message = "Unvalid format." }),
     Users.RegistrationStatus.WeakPassword => Results.BadRequest(new { Message = "Weak-password. Minimum 15 characters." }),
+    _ => Results.StatusCode(500)
+  };
+}
+static async Task<IResult> Users_Patch_Handler(string temp_key, Users.Patch_Args user, Config config)
+{
+  var status = await Users.Patch(temp_key, user, config);
+
+  return status switch
+  {
+    Users.PatchStatus.Success => Results.NoContent(),
+    Users.PatchStatus.NotFound => Results.NotFound(new { Message = "Invalid or expired key." }),
+    Users.PatchStatus.PasswordsDoNotMatch => Results.BadRequest(new { Message = "New password and confirmation password do not match." }),
+    Users.PatchStatus.WeakPassword => Results.BadRequest(new { Message = "Weak password. Minimum 15 characters." }),
+    Users.PatchStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid data provided." }),
     _ => Results.StatusCode(500)
   };
 }

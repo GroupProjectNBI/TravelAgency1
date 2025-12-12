@@ -161,30 +161,73 @@ class Users
     return (RegistrationStatus.Success, userId);
   }
 
-  public record Patch_Args(string Email, string Password);
-  public static async Task
+  public record Patch_Args(string Email, string new_password, string confirm_password);
+  public enum PatchStatus
+  {
+    Success,
+    NotFound,
+    WeakPassword,
+    PasswordsDoNotMatch,
+    InvalidFormat
+  }
+
+
+  public static async Task<PatchStatus>
   Patch(string temp_key, Patch_Args user, Config config)
   {
-    string query = """
-      START TRANSACTION;
-      UPDATE users 
-      SET password = @password 
-      WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
-    
-      DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
 
-        COMMIT;
-
-      """;
-    var parameters = new MySqlParameter[]
+    if (user.new_password != user.confirm_password)
     {
+      return PatchStatus.PasswordsDoNotMatch;
+    }
+
+
+    if (user.new_password.Length < 15)
+    {
+      return PatchStatus.WeakPassword;
+    }
+
+    string rawPassword = user.new_password;
+
+    try
+    {
+
+      string query = """
+    START TRANSACTION;
+    
+    UPDATE users 
+    SET password = @password 
+    WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+    
+   
+    SELECT ROW_COUNT();
+    
+    DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
+
+    COMMIT;
+""";
+      var parameters = new MySqlParameter[]
+      {
             new("@temp_key", temp_key),
-            new("@password", user.Password)
-    };
+            new("@password", rawPassword)
+      };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+      var result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
+      int rowsUpdated = Convert.ToInt32(result);
 
+      if (rowsUpdated == 0)
+      {
+        return PatchStatus.NotFound;
+      }
+
+      return PatchStatus.Success;
+    }
+    catch (Exception)
+    {
+      return PatchStatus.InvalidFormat;
+    }
   }
+
 
   public static async Task
   Delete(int Id, Config config)
