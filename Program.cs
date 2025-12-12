@@ -55,16 +55,28 @@ app.MapGet("/reset/{email}", Users.Reset);
 //Get all hotels
 //Add so you also can delete and update users/ GHERKIN?? 
 // endpoint for locations use later
-app.MapGet("/locations/{UserInput}", Destinations.Search);
-app.MapPost("/locations", Destinations.Post);
-app.MapDelete("/locations/{Id}", Destinations.Delete);
-
+//app.MapGet("/locations/{UserInput}", Destinations.Search); tillfällig
+//app.MapPost("/locations", Destinations.Post); tillfällig
+//app.MapDelete("/locations/{Id}", Destinations.Delete); tillfällig
+app.MapGet("/locations", Locations.Get_All); // new
+app.MapGet("/locations/search", Locations_Search_Handler); //new
+app.MapPost("/location", Locations_Post_Handler); //new
+app.MapGet("location/{id}", Locations_Get_Handler); //new
+app.MapDelete("/location/{id}", Locations_Delete_Handler); //new
 // endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
 app.MapGet("/hotels/{Id}", Hotels.Get);
 app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapPut("/hotels/{id}", Hotels.Put);
+
+//endpoints for rooms
+app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
+app.MapGet("/rooms", Rooms.GetAll);
+app.MapGet("/rooms/{id}", Rooms.Get);
+app.MapPost("/rooms", Rooms_Post_Handler);
+app.MapPut("/rooms/{id}", Rooms_Put_Handler);
+app.MapDelete("/rooms/{id}", Rooms.Delete);
 
 // endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
@@ -86,6 +98,37 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 
 app.Run();
+
+static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
+{
+  var (status, roomId) = await Rooms.Post(room, config);
+  return status switch
+  {
+    Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
+
+    Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
+
+    Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
+
+    _ => Results.StatusCode(500)
+
+  };
+}
+
+static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
+{
+  var status = await Rooms.Put(id, room, config);
+
+  return status switch
+  {
+    Rooms.RoomUpdateStatus.Success => Results.NoContent(),
+    Rooms.RoomUpdateStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data" }),
+    Rooms.RoomUpdateStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found" }),
+    Rooms.RoomUpdateStatus.NotFound => Results.NotFound(new { Message = "Room not found" }),
+    _ => Results.StatusCode(500)
+  };
+}
+
 
 //void
 async Task db_reset_to_default(Config config)
@@ -139,9 +182,11 @@ async Task db_reset_to_default(Config config)
   CREATE TABLE rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   hotel_id INT NOT NULL,
+  room_number INT NOT NULL,
   name ENUM ('Single', 'Double', 'Suite'),
   capacity INT NOT NULL,
   price_per_night DECIMAL(10,2) NOT NULL,
+  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
   FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
@@ -173,20 +218,46 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
 
+  CREATE TABLE bookings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  location_id INT NOT NULL,
+  hotel_id INT NOT NULL,
+  package_id INT NOT NULL,
+  check_in DATE NOT NULL,
+  check_out DATE NOT NULL,
+  guests INT NOT NULL,
+  rooms INT NOT NULL,
+  status ENUM('pending','confirmed','cancelled'),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  total_price DECIMAL(10,2) NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (location_id) REFERENCES locations(id),
+  FOREIGN KEY (hotel_id) REFERENCES hotels(id),
+  FOREIGN KEY (package_id) REFERENCES packages(id)
+  );
+
+  CREATE TABLE booking_meals (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bookings_id INT NOT NULL,
+  date DATE,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  FOREIGN KEY (bookings_id) REFERENCES bookings(id)
+  );
 
   """;
 
-
-
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
@@ -196,6 +267,51 @@ async Task db_reset_to_default(Config config)
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
+}
+
+static async Task<IResult> Locations_Search_Handler(string search, Config config)
+{
+  try
+
+  {
+    var result = await Locations.Search(search, config);
+    return Results.Ok(result);
+  }
+  catch (ArgumentException ex)
+  {
+    return Results.BadRequest(new { Message = ex.Message });
+  }
+}
+static async Task<IResult> Locations_Get_Handler(int id, Config config)
+{
+  var location = await Locations.Get(config, id);
+  if (location is null)
+  {
+    return Results.NotFound(new { Message = $"Location with ID {id} was not found." });
+  }
+  return Results.Ok(location);
+}
+static async Task<IResult> Locations_Post_Handler(Post_Location_Args args, Config config)
+{
+  try
+  {
+    int newId = await Locations.Post(args, config);
+    return Results.Created($"/location/{newId}", new { id = newId, Message = "Location created successfully." });
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Locations_Delete_Handler(int id, Config config)
+{
+  int affectedRows = await Locations.Delete(id, config);
+
+  if (affectedRows == 0)
+  {
+    return Results.NotFound(new { Message = $"Location with ID {id} was not found or could not be deleted." });
+  }
+  return Results.NoContent();
 }
 static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
 {
