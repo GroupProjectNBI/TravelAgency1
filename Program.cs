@@ -80,8 +80,8 @@ app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
 // endpoints for packages
-app.MapPost("/packages_meals", package_meals.Post);
-app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
+// app.MapPost("/packages_meals", package_meals.Post);
+// app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
 
 
 // endpoint for packages 
@@ -94,9 +94,10 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
+
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
-
+app.MapPost("/bookings", Bookings.Post);
 app.Run();
 
 
