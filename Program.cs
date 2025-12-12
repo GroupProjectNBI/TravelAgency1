@@ -70,6 +70,14 @@ app.MapPost("/hotels", Hotels.Post);
 app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
 app.MapPut("/hotels/{id}", Hotels.Put);
 
+//endpoints for rooms
+app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
+app.MapGet("/rooms", Rooms.GetAll);
+app.MapGet("/rooms/{id}", Rooms.Get);
+app.MapPost("/rooms", Rooms_Post_Handler);
+app.MapPut("/rooms/{id}", Rooms_Put_Handler);
+app.MapDelete("/rooms/{id}", Rooms.Delete);
+
 // endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
 app.MapGet("/restaurants/{id}", Restaurants.Get);
