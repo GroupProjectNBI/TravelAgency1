@@ -74,7 +74,6 @@ app.MapPost("/rooms", Rooms_Post_Handler);
 app.MapPut("/rooms/{id}", Rooms_Put_Handler);
 app.MapDelete("/rooms/{id}", Rooms.Delete);
 
-app.MapPut("/hotels/{id}", Hotels.Put);
 
 // endpoints for restaurants
 app.MapGet("/restaurants", Restaurants.GetAll);
