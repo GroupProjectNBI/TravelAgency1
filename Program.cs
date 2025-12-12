@@ -17,13 +17,16 @@ app.UseSession();
 app.MapGet("/register", Users.GetAll);
 app.MapGet("/register/{Id}", Users.Get);
 app.MapPost("/register", Users.Post);
+
 app.MapDelete("/db", db_reset_to_default);
 
 app.MapGet("/", () => "Hello world!");
 
 app.MapGet("/profile", Profile.Get);
+
 app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
+
 app.MapPatch("/newpassword/{temp_key}", Users.Patch);
 
 //app.MapPost("/location", Locations.Post);
