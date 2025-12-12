@@ -108,7 +108,7 @@ class Hotels
   }
   public static async Task<IResult> Put(int id, UpdateHotel_hotel hotel, Config config)
   {
-    try
+    try 
     {
       await UpdateHotel(id, hotel, config);
       return Results.Ok(new { message = "Hotel updated successfully", id = id });
