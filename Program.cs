@@ -213,7 +213,8 @@ async Task db_reset_to_default(Config config)
   guests INT NOT NULL,
   rooms INT NOT NULL,
   status ENUM('pending','confirmed','cancelled'),
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at DATE NOT NULL DEFAULT (CURRENT_DATE),
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
   total_price DECIMAL(10,2) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id),
   FOREIGN KEY (location_id) REFERENCES locations(id),
