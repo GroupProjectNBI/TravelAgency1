@@ -116,6 +116,7 @@ async Task db_reset_to_default(Config config)
   email VARCHAR(256) UNIQUE,
   first_name VARCHAR(50),
   last_name VARCHAR(100),
+  role ENUM ('admin', 'client'),
   date_of_birth DATE,
   password VARCHAR(256));
   
