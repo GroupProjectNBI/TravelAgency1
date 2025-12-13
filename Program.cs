@@ -95,9 +95,20 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 
-//endpoint for bookings
+//endpoint for bookings   
+/*
+vi måste bestämma var vi hanterar valideringen. 
+Nu är det kod som är blandad i progam och i klasserna. 
+Program.cs är super lång så jag föreslår att varje validering görs 
+för varje funktion istället för att kladda i program.cs
+handler funktionerna undertill är bara mer kod som måste hanteras. 
+*/
 app.MapGet("/bookings", Bookings_Get_All_Handler);
 app.MapPost("/bookings", Bookings.Post);
+app.MapPut("/bookings/{id}", Bookings.Put);
+
+
+
 app.Run();
 
 
