@@ -97,4 +97,100 @@ decimal total_price
       return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
   }
+  public record Change_Args(int user_id, int location_id, int hotel_id, int package_id, DateOnly check_in, DateOnly check_out, int guests, int rooms, string status, DateTime created_at, decimal total_price);
+  public static async Task<IResult>
+  Put(int id, Change_Args bookings, Config config)
+  {
+
+    // if (string.IsNullOrWhiteSpace(restaurant.name))
+    //   return Results.BadRequest(new { message = "Name is required" });
+
+    // if (restaurant.location_id <= 0)
+    //   return Results.BadRequest(new { message = "Invalid location_id" });
+
+    // // Kontrollera att location finns
+    // var locExists = await MySqlHelper.ExecuteScalarAsync(config.db,
+    //     "SELECT COUNT(1) FROM locations WHERE id = @id",
+    //     new MySqlParameter[] { new("@id", restaurant.location_id) });
+
+    // if (Convert.ToInt32(locExists) == 0)
+    //   return Results.BadRequest(new { message = "location_id does not exist" });
+
+    // // Kontrollera att restaurangen som ska uppdateras finns
+    // var restExists = await MySqlHelper.ExecuteScalarAsync(config.db,
+    //     "SELECT COUNT(1) FROM restaurants WHERE id = @id",
+    //     new MySqlParameter[] { new("@id", id) });
+
+    // if (Convert.ToInt32(restExists) == 0)
+    //   return Results.NotFound(new { message = "Restaurant not found" });
+
+    try
+    {
+      string updateSql = """
+            UPDATE bookings
+            SET
+            user_id = @user_id,
+            location_id = @location_id, 
+            hotel_id = @hotel_id, 
+            package_id = @package_id, 
+            check_in = @check_in, 
+            check_out = @check_out,
+            guests = @guests, 
+            rooms = @rooms, 
+            status = @status,
+            created_at = @created_at,
+            total_price = @total_price
+            WHERE id = @id;
+            """;
+
+      var parameters = new MySqlParameter[]
+{
+           new("@id", id),
+           new("@user_id", bookings.user_id),
+            new("@location_id", bookings.location_id),
+            new("@hotel_id", bookings.hotel_id),
+            new("@package_id", bookings.package_id),
+            new("@check_in", bookings.check_in),
+            new("@check_out", bookings.check_out),
+            new("@guests", bookings.guests),
+            new("@rooms", bookings.rooms),
+            new("@status", bookings.status),
+            new("@created_at", bookings.created_at),
+            new("@total_price", bookings.total_price)
+};
+
+      int affected = await MySqlHelper.ExecuteNonQueryAsync(config.db, updateSql, parameters);
+      if (affected == 0)
+      {
+        var existsObj = await MySqlHelper.ExecuteScalarAsync(config.db,
+            "SELECT COUNT(1) FROM bookings WHERE id = @id",
+            new MySqlParameter[] { new MySqlParameter("@id", id) });
+
+        if (existsObj == null || existsObj == DBNull.Value)
+        {
+
+          return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+
+        long count = Convert.ToInt64(existsObj);
+        if (count == 0)
+        {
+          return Results.NotFound(new { message = "No bookings found" });
+        }
+        else
+        {
+          return Results.NoContent();
+        }
+      }
+
+
+      var body = new { id = id, message = "Updated successfully" };
+      return Results.Ok(body);
+    }
+    catch (Exception er)
+    {
+      Console.WriteLine(er);
+      return Results.StatusCode(StatusCodes.Status500InternalServerError);
+    }
+  }
 }
