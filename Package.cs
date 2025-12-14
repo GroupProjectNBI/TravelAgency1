@@ -1,31 +1,34 @@
 namespace TravelAgency;
 
+using System.Collections.Generic;
 using MySql.Data.MySqlClient;
 
 
 class Package
 {
-    public record GetAll_Data(int id, int location_id, string name, string description, string package_type);
-    public static async Task<List<GetAll_Data>>
+    public record GetAll_Data(int id, int location_id, string name, string description, string package_type, double? AvgRating);
+    public static async Task<IResult>
     GetAll(Config config)
     {
         List<GetAll_Data> restult = new();
-        string get_all_query = "SELECT id, location_id, name, description, package_type FROM packages";
+        string get_all_query = "SELECT id, location_id, name, description, package_type, avg_rating FROM packages";
         using (var reader = await
         MySqlHelper.ExecuteReaderAsync(config.db, get_all_query))
         {
             while (reader.Read())
             {
+                double? avgRating = reader.IsDBNull(5) ? (double?)null : reader.GetDouble(5);
                 restult.Add(new(
                     reader.GetInt32(0),
                     reader.GetInt32(1),
                     reader.GetString(2),
                     reader.GetString(3),
-                    reader.GetString(4)
+                    reader.GetString(4),
+                    avgRating
                 ));
             }
         }
-        return restult;
+        return Results.Ok(restult);
     }
 
     public record Get_Data(int location_id, string name, string description, string package_type);

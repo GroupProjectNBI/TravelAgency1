@@ -20,6 +20,8 @@ app.MapGet("/register/{Id}", Users.Get);
 // app.MapPost("/register", Users.Post);
 app.MapPost("/register", Users_Post_Handler);
 
+
+
 // reset all the tables for the databse
 app.MapDelete("/db", db_reset_to_default);
 
@@ -46,8 +48,10 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 // app.MapPost("/login", Login.Post);
 app.MapDelete("/login", Login.Delete);
 
+
+
 // enpoint for reset password
-app.MapPatch("/newpassword/{temp_key}", Users.Patch);
+app.MapPatch("/newpassword/{temp_key}", Users_Patch_Handler);
 app.MapGet("/reset/{email}", Users.Reset);
 
 // endpoints for locations
@@ -81,7 +85,7 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
 // endpoints for packages
 app.MapPost("/packages_meals", package_meals.Post);
-app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);
 
 
 // endpoint for packages 
@@ -90,12 +94,16 @@ app.MapGet("/packages/{Id}", Package.Get);
 app.MapPost("/packages", Package.Post);
 app.MapPut("/packages/{id}", Package.Put);
 app.MapDelete("/packages/{id}", Package.DeletePackage);
+app.MapPost("/ratings", RateTrip_Handler); //Rating
+app.MapGet("/upcomingtrips", UpcomingTrips_Get_Handler); //NEW
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
+app.MapPost("/bookings", Bookings_Post_Handler);
+app.MapGet("/bookings/{booking_id}/meals", Bookings_Get_Meals_Handler);
 
 app.Run();
 
@@ -177,6 +185,8 @@ async Task db_reset_to_default(Config config)
   name VARCHAR(100),
   description VARCHAR (254),
   package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
+  avg_rating DECIMAL(2, 1) DEFAULT 0.0,
+  rating_count INT DEFAULT 0,
   FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
@@ -185,7 +195,7 @@ async Task db_reset_to_default(Config config)
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
   meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
-  day_offset TIMESTAMP,
+  day_offset INT,
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
@@ -209,6 +219,18 @@ async Task db_reset_to_default(Config config)
   FOREIGN KEY (package_id) REFERENCES packages(id)
   );
 
+   CREATE TABLE ratings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  bookings_id INT NOT NULL UNIQUE,
+  user_id INT NOT NULL,
+  package_id INT NOT NULL,
+  rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (bookings_id) REFERENCES bookings(id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (package_id) REFERENCES packages(id)
+  );
+
   CREATE TABLE booking_meals (
   id INT AUTO_INCREMENT PRIMARY KEY,
   bookings_id INT NOT NULL,
@@ -220,6 +242,7 @@ async Task db_reset_to_default(Config config)
   """;
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS ratings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
@@ -237,6 +260,8 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages (id, location_id, name, description, package_type) VALUES (1, 1, 'Stockholm Weekend', 'A fun package in the capital', 'Veggie');");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, meal_type) VALUES (1, 1, 'Dinner');");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
@@ -298,6 +323,20 @@ static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config confi
     _ => Results.StatusCode(500)
   };
 }
+static async Task<IResult> Users_Patch_Handler(string temp_key, Users.Patch_Args user, Config config)
+{
+  var status = await Users.Patch(temp_key, user, config);
+
+  return status switch
+  {
+    Users.PatchStatus.Success => Results.NoContent(),
+    Users.PatchStatus.NotFound => Results.NotFound(new { Message = "Invalid or expired key." }),
+    Users.PatchStatus.PasswordsDoNotMatch => Results.BadRequest(new { Message = "New password and confirmation password do not match." }),
+    Users.PatchStatus.WeakPassword => Results.BadRequest(new { Message = "Weak password. Minimum 15 characters." }),
+    Users.PatchStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid data provided." }),
+    _ => Results.StatusCode(500)
+  };
+}
 
 static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config config)
 {
@@ -351,6 +390,74 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
   {
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
+}
+static async Task<IResult> Bookings_Get_Meals_Handler(int booking_id, Config config)
+{
+  try
+  {
+    var meals = await Bookings.Get_Meals(booking_id, config);
+
+    if (meals.Count == 0)
+    {
+      return Results.NotFound(new { Message = $"No meals found for booking ID {booking_id}." });
+    }
+    return Results.Ok(meals);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Bookings_Post_Handler(Bookings.Post_Args args, Config config, HttpContext ctx)
+{
+  int? userId = Users.GetId(ctx);
+  if (userId == null)
+  {
+    return Results.Unauthorized();
+  }
+  return await Bookings.Post(args, userId.Value, config);
+}
+
+
+static async Task<IResult> UpcomingTrips_Get_Handler(HttpContext context, Config config)
+{
+  int? userId = Users.GetId(context);
+  if (userId == null)
+  {
+    return Results.Unauthorized();
+  }
+  var trips = await Users.GetUpcomingTrips(userId.Value, config);
+
+  return Results.Ok(trips);
+}
+
+// I Program.cs
+// ... (befintlig kod)
+
+static async Task<IResult> RateTrip_Handler(Users.RateTrip_Args args, HttpContext context, Config config)
+{
+  int? userId = Users.GetId(context);
+  if (userId == null)
+  {
+    return Results.Unauthorized();
+  }
+
+  if (args.rating < 1 || args.rating > 5)
+  {
+    return Results.BadRequest("Rating must be between 1 and 5 stars.");
+  }
+
+  int result = await Users.RateTrip(args, userId.Value, config);
+
+  return result switch
+  {
+    1 => Results.NoContent(),
+
+    -2 => Results.NotFound("Booking not found, trip has not ended, or you are not the owner of the booking."),
+
+    -3 => Results.Conflict("This trip has already been rated."),
+    _ => Results.StatusCode(StatusCodes.Status500InternalServerError)
+  };
 }
 
 

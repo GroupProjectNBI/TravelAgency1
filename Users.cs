@@ -5,6 +5,14 @@ using MySql.Data.MySqlClient;
 
 class Users
 {
+  public static int? GetId(HttpContext context)
+  {
+    if (context.Session.IsAvailable)
+    {
+      return context.Session.GetInt32("user_id");
+    }
+    return null;
+  }
   public record GetAll_Data(int Id, string email, string first_name, string last_name, DateOnly date_of_birth, string password);
 
   public enum RegistrationStatus { Success, EmailConflict, InvalidFormat, WeakPassword }
@@ -161,30 +169,73 @@ class Users
     return (RegistrationStatus.Success, userId);
   }
 
-  public record Patch_Args(string Email, string Password);
-  public static async Task
+  public record Patch_Args(string Email, string new_password, string confirm_password);
+  public enum PatchStatus
+  {
+    Success,
+    NotFound,
+    WeakPassword,
+    PasswordsDoNotMatch,
+    InvalidFormat
+  }
+
+
+  public static async Task<PatchStatus>
   Patch(string temp_key, Patch_Args user, Config config)
   {
-    string query = """
-      START TRANSACTION;
-      UPDATE users 
-      SET password = @password 
-      WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
-    
-      DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
 
-        COMMIT;
-
-      """;
-    var parameters = new MySqlParameter[]
+    if (user.new_password != user.confirm_password)
     {
+      return PatchStatus.PasswordsDoNotMatch;
+    }
+
+
+    if (user.new_password.Length < 15)
+    {
+      return PatchStatus.WeakPassword;
+    }
+
+    string rawPassword = user.new_password;
+
+    try
+    {
+
+      string query = """
+    START TRANSACTION;
+    
+    UPDATE users 
+    SET password = @password 
+    WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+    
+   
+    SELECT ROW_COUNT();
+    
+    DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
+
+    COMMIT;
+""";
+      var parameters = new MySqlParameter[]
+      {
             new("@temp_key", temp_key),
-            new("@password", user.Password)
-    };
+            new("@password", rawPassword)
+      };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+      var result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
+      int rowsUpdated = Convert.ToInt32(result);
 
+      if (rowsUpdated == 0)
+      {
+        return PatchStatus.NotFound;
+      }
+
+      return PatchStatus.Success;
+    }
+    catch (Exception)
+    {
+      return PatchStatus.InvalidFormat;
+    }
   }
+
 
   public static async Task
   Delete(int Id, Config config)
@@ -194,5 +245,130 @@ class Users
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
+  public record UpcomingTrips(string destination, DateOnly departure_date, DateOnly return_date);
 
+  public static async Task<List<UpcomingTrips>>
+  GetUpcomingTrips(int userId, Config config)
+  {
+    List<UpcomingTrips> result = new();
+
+    string query = """
+    SELECT 
+    loc.city,
+    b.check_in,
+    b.check_out
+    FROM bookings b
+    JOIN locations loc ON b.location_id = loc.id
+    WHERE b.user_id = @userId
+    AND b.check_in >= CURDATE()
+    ORDER BY b.check_in ASC
+    
+    """;
+    var parameters = new MySqlParameter[] { new("@userId", userId) };
+
+    using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+    {
+      while (reader.Read())
+      {
+        DateOnly departure = DateOnly.FromDateTime(reader.GetDateTime(1));
+        DateOnly return_date = DateOnly.FromDateTime(reader.GetDateTime(2));
+
+        result.Add(new(reader.GetString(0), departure, return_date));
+      }
+    }
+    return result;
+  }
+  public record RateTrip_Args(int booking_id, int rating);
+
+  public static async Task<int>
+  RateTrip(RateTrip_Args ratingData, int userId, Config config)
+  {
+    if (ratingData.rating < 1 || ratingData.rating > 5)
+    {
+      return -1;
+    }
+
+
+    using var connection = new MySqlConnection(config.db);
+    await connection.OpenAsync();
+    using var transaction = await connection.BeginTransactionAsync();
+
+    try
+    {
+      string selectQuery = """
+            SELECT 
+                b.package_id 
+            FROM bookings b
+            WHERE b.id = @booking_id
+            AND b.user_id = @userId
+            AND b.check_out < DATE(NOW());
+        """;
+      var selectParameters = new MySqlParameter[]
+      {
+            new("@booking_id", ratingData.booking_id),
+            new("@userId", userId)
+      };
+
+
+      object packageIdObj = await MySqlHelper.ExecuteScalarAsync(connection, selectQuery, selectParameters);
+
+      if (packageIdObj == null || packageIdObj == DBNull.Value)
+      {
+        await transaction.RollbackAsync();
+        return -2;
+      }
+
+      int packageId = Convert.ToInt32(packageIdObj);
+
+
+      string checkRatingQuery = "SELECT COUNT(id) FROM ratings WHERE bookings_id = @booking_id";
+      long existingRatingCount = (long)await MySqlHelper.ExecuteScalarAsync(
+           connection,
+           checkRatingQuery,
+           new MySqlParameter("@booking_id", ratingData.booking_id)
+      );
+
+      if (existingRatingCount > 0)
+      {
+        await transaction.RollbackAsync();
+        return -3;
+      }
+      string insertQuery = """
+            INSERT INTO ratings (bookings_id, user_id, package_id, rating)
+            VALUES (@booking_id, @userId, @packageId, @rating);
+        """;
+      var insertParameters = new MySqlParameter[]
+      {
+            new("@booking_id", ratingData.booking_id),
+            new("@userId", userId),
+            new("@packageId", packageId),
+            new("@rating", ratingData.rating)
+      };
+      await MySqlHelper.ExecuteNonQueryAsync(connection, insertQuery, insertParameters);
+      string updatePackageQuery = """
+            UPDATE packages p
+            SET avg_rating = (
+                SELECT AVG(r.rating)
+                FROM ratings r
+                WHERE r.package_id = @packageId
+            ),
+            rating_count = (
+                SELECT COUNT(r.id)
+                FROM ratings r
+                WHERE r.package_id = @packageId
+            )
+            WHERE p.id = @packageId;
+        """;
+
+      await MySqlHelper.ExecuteNonQueryAsync(connection, updatePackageQuery, new MySqlParameter("@packageId", packageId));
+
+      await transaction.CommitAsync();
+      return 1;
+    }
+    catch (Exception)
+    {
+      await transaction.RollbackAsync();
+      return -99;
+    }
+  }
 }
