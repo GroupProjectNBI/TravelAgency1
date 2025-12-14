@@ -77,24 +77,64 @@ class package_meals
 
 
 
-    // public record Put_Args(int restaurant_id, MealType meal_type, int day_offset);
+    public record Put_Args(int restaurant_id, DayKind day_kind, MealType meal_type);
 
-    // public static async Task<IResult> Put(int id, Put_Args args, Config config)
-    // {
-    //     if (id <= 0) return Results.BadRequest(new { message = "Invalid id" });
-    //     if (args.day_offset < 0) return Results.BadRequest
-    // }
+    public static async Task<IResult> Put(int id, Put_Args args, Config config)
+    {
+        if (id <= 0) return Results.BadRequest(new { message = "Invalid id" });
 
-    // //rules for meals, on arrivaldate the package can only have dinner assigned
-    // static IResult? ValidateMealRule(string mealType, int dayOffset)
-    // {
-    //     if (dayOffset < 0)
-    //         return Results.BadRequest(new { message = "day_offset must be 0 or greater" });
-    //     if (dayOffset == 0 && mealType != "Dinner")
-    //         return Results.BadRequest(new { message = "Arrival day (day_offset=0) must be Dinner" });
-    //     return null; //ok
+        //validate rules
+        var ruleErr = ValidateRules(args.day_kind, args.meal_type);
+        if (ruleErr is not null) return ruleErr;
 
-    // }
+        //does the row exist?
+        var rowExists = await MySqlHelper.ExecuteScalarAsync(
+        config.db, "SELECT COUNT(1) FROM packages_meals WHERE id = @id",
+        [new("@id", id)]
+        );
+
+        if (Convert.ToInt32(rowExists) == 0)
+            return Results.NotFound(new { message = "package_meals row not found" });
+
+        //does the restaurant exist?
+        if (!await RestaurantExists(config, args.restaurant_id))
+            return Results.BadRequest(new { message = "The restaurant_id does not exist" });
+
+
+        string query = """
+            UPDATE package_meals
+            SET
+            restaurant_id = restaurant_id,
+            day_kind = @day_kind,
+            meal_type = @meal_type
+            WHERE id = @id;
+        """;
+
+        var parameters = new MySqlParameter[]
+        {
+            new("@restaurant_id", args.restaurant_id),
+            new("@day_kind", args.day_kind.ToString()),
+            new("@meal_type", args.meal_type.ToString()),
+            new("@id", id)
+        };
+
+        try
+        {
+            await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+            return Results.NoContent();
+        }
+        catch (MySqlException ex) when (ex.Number == 1062)
+        {
+            return Results.Conflict(new
+            { message = "Meal already exist for this package and day_kind" });
+        }
+        catch
+        {
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
+
+
 
     //DELETE-method för att ta bort en rad i packages_meals
     public static async Task Delete(int Id, Config config)
