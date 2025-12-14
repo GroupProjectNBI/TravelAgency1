@@ -103,9 +103,9 @@ class package_meals
 
 
         string query = """
-            UPDATE package_meals
+            UPDATE packages_meals
             SET
-            restaurant_id = restaurant_id,
+            restaurant_id = @restaurant_id,
             day_kind = @day_kind,
             meal_type = @meal_type
             WHERE id = @id;
