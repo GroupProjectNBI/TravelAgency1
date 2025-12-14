@@ -88,6 +88,7 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
+//app.MapPut("/packages_meald/{id}", package_meals.Put);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 
 
@@ -179,6 +180,7 @@ async Task db_reset_to_default(Config config)
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
   meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
+  day_offset INT NOT NULL DEFAULT 0,
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
