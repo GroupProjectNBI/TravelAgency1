@@ -10,12 +10,12 @@ int user_id,
 int location_id,
 int hotel_id,
 int package_id,
-DateTime check_in,
-DateTime check_out,
+DateOnly check_in,
+DateOnly check_out,
 int guests,
 int rooms,
 string status, //enum i DB string i c#
-DateTime created_at,
+DateOnly created_at,
 decimal total_price
   );
   private static Booking_Data Read_Booking(MySqlDataReader reader)
@@ -26,12 +26,12 @@ decimal total_price
         location_id: reader.GetInt32(2),
         hotel_id: reader.GetInt32(3),
         package_id: reader.GetInt32(4),
-        check_in: reader.GetDateTime(5),
-        check_out: reader.GetDateTime(6),
+        check_in: DateOnly.FromDateTime(reader.GetDateTime(5)),
+        check_out: DateOnly.FromDateTime(reader.GetDateTime(6)),
         guests: reader.GetInt32(7),
         rooms: reader.GetInt32(8),
         status: reader.GetString(9), // Read ENUM as string
-        created_at: reader.GetDateTime(10),
+        created_at: DateOnly.FromDateTime(reader.GetDateTime(10)),
         total_price: reader.GetDecimal(11)
     );
 
@@ -88,7 +88,6 @@ string meal_type
     return meals;
   }
   public record Post_Args(
-    int user_id,
     int location_id,
     int hotel_id,
     int package_id,
@@ -98,11 +97,11 @@ string meal_type
     int rooms,
     decimal total_price
 );
-  public static async Task<IResult> Post(Post_Args args, Config config)
+  public static async Task<IResult> Post(Post_Args args, int userId, Config config)
   {
     var checks = new (string table, int id, string error)[]
     {
-        ("users", args.user_id, "user_id"),
+        //("users", args.user_id, "user_id"),
         ("locations", args.location_id, "location_id"),
         ("hotels", args.hotel_id, "hotel_id"),
         ("packages", args.package_id, "package_id")
@@ -129,17 +128,17 @@ string meal_type
       string query = """
             INSERT INTO bookings (
                 user_id, location_id, hotel_id, package_id, 
-                check_in, check_out, guests, rooms, total_price, status
+                check_in, check_out, guests, rooms, status, total_price
             )
             VALUES (
                 @user_id, @location_id, @hotel_id, @package_id, 
-                @check_in, @check_out, @guests, @rooms, @total_price, 'confirmed'
+                @check_in, @check_out, @guests, @rooms, 'confirmed', @total_price
             );
         """;
 
       var parameters = new MySqlParameter[]
       {
-            new("@user_id", args.user_id),
+            new("@user_id", userId),
             new("@location_id", args.location_id),
             new("@hotel_id", args.hotel_id),
             new("@package_id", args.package_id),
