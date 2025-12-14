@@ -18,10 +18,10 @@ class package_meals
         Breakfast, Lunch, Dinner
     }
 
-    // Record som beskriver indata när man lägger till en rad
+    //POST
     public record Post_Args(int package_id, int restaurant_id, DayKind day_kind, MealType meal_type);
 
-    // Metod för att lägga till en rad i packages_meals
+    // Post method to add a row in package_meals
     public static async Task<IResult> Post(Post_Args args, Config config)
 
     {
@@ -34,7 +34,7 @@ class package_meals
 
         if (!await PackageExists(config, args.package_id))
             return Results.BadRequest(new { message = "package_id does not exist" });
-        // Kontrollera att restaurant_id finns
+
         if (!await RestaurantExists(config, args.restaurant_id))
             return Results.BadRequest(new { message = "package_id does not exist" });
 
@@ -54,10 +54,10 @@ class package_meals
         };
         try
         {
-            // /// write a SQL INSERT statement
+
             await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
-            // To know the unique ID that MySQL generated (auto-increment id column)
+
             var newIdObj = await MySqlHelper.ExecuteScalarAsync(config.db, "SELECT LAST_INSERT_ID();");
             int newId = Convert.ToInt32(newIdObj);
 
@@ -76,9 +76,10 @@ class package_meals
     }
 
 
-
+    // PUT
     public record Put_Args(int restaurant_id, DayKind day_kind, MealType meal_type);
 
+    // Put method to edit an existing row in the package_meals
     public static async Task<IResult> Put(int id, Put_Args args, Config config)
     {
         if (id <= 0) return Results.BadRequest(new { message = "Invalid id" });
@@ -136,7 +137,7 @@ class package_meals
 
 
 
-    //DELETE-method för att ta bort en rad i packages_meals
+    //DELETE
     public static async Task Delete(int Id, Config config)
     {
         string query = "DELETE FROM packages_meals WHERE id = @Id";
@@ -145,7 +146,7 @@ class package_meals
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
     }
 
-    // helpers
+    //HELPERS
 
     static IResult? ValidateRules(DayKind dayKind, MealType mealType)
     {
