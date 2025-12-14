@@ -1,13 +1,9 @@
 namespace TravelAgency;
 
-using System.ComponentModel.Design;
-using System.Configuration;
 using MySql.Data.MySqlClient;
 
 
 class package_meals
-
-
 {
     public enum DayKind
     {
@@ -36,7 +32,7 @@ class package_meals
             return Results.BadRequest(new { message = "package_id does not exist" });
 
         if (!await RestaurantExists(config, args.restaurant_id))
-            return Results.BadRequest(new { message = "package_id does not exist" });
+            return Results.BadRequest(new { message = "restaurant_id does not exist" });
 
 
         /// write a SQL INSERT statement
@@ -75,6 +71,34 @@ class package_meals
 
     }
 
+    //SELECT
+    private static Meal_Data Read_Meal(MySqlDataReader reader)
+    {
+        return new Meal_Data(
+            id: reader.GetInt32(0),
+            package_id: reader.GetInt32(1),
+            restaurant_id: reader.GetInt32(2),
+            day_kind: reader.GetString(3),
+            meal_type: reader.GetString(4)
+        );
+    }
+
+    public record Meal_Data(int id, int package_id, int restaurant_id, string day_kind, string meal_type);
+    public static async Task<List<Meal_Data>> Get_All(Config config)
+    {
+        List<Meal_Data> meals = new();
+
+        string query = "SELECT id, package_id, restaurant_id, day_kind, meal_type FROM packages_meals";
+
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query);
+
+        while (reader.Read())
+        {
+            meals.Add(Read_Meal(reader));
+        }
+
+        return meals;
+    }
 
     // PUT
     public record Put_Args(int restaurant_id, DayKind day_kind, MealType meal_type);
@@ -138,6 +162,7 @@ class package_meals
 
 
     //DELETE
+    //DELETE-method för att ta bort en rad i packages_meals
     public static async Task Delete(int Id, Config config)
     {
         string query = "DELETE FROM packages_meals WHERE id = @Id";
@@ -147,7 +172,6 @@ class package_meals
     }
 
     //HELPERS
-
     static IResult? ValidateRules(DayKind dayKind, MealType mealType)
     {
         if (dayKind == DayKind.Arrival && mealType != MealType.Dinner)
@@ -176,6 +200,5 @@ class package_meals
 
         return Convert.ToInt32(obj) > 0;
     }
-
 }
 

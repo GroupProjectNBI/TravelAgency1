@@ -88,9 +88,12 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);
 app.MapPut("/packages_meals/{id}", package_meals.Put);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 
+//endpoint for bookings
+app.MapGet("/bookings", Bookings_Get_All_Handler);
 
 app.Run();
 
@@ -328,6 +331,31 @@ static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config
     _ => Results.StatusCode(500)
   };
 }
+static async Task<IResult> PackagesMeals_Get_All_Handler(Config config)
+{
+  try
+  {
+    var meals = await package_meals.Get_All(config);
+    return Results.Ok(meals);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+static async Task<IResult> Bookings_Get_All_Handler(Config config)
+{
+  try
+  {
+    var bookings = await Bookings.Get_All(config);
+    return Results.Ok(bookings);
+  }
+  catch (Exception)
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
 
 // DELIMITER $$
 //   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
