@@ -79,11 +79,6 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
-// endpoints for packages
-app.MapPost("/packages_meals", package_meals.Post);////???? 2 times?
-app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
-
-
 // endpoint for packages 
 app.MapGet("/packages", Package.GetAll);
 app.MapGet("/packages/{Id}", Package.Get);
@@ -92,8 +87,11 @@ app.MapPut("/packages/{id}", Package.Put);
 app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 // endpoints for package meals
-app.MapPost("/packages_meals", package_meals.Post);/// ???? 2 times?
+app.MapPost("/packages_meals", package_meals.Post);
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);
+app.MapPut("/packages_meals/{id}", package_meals.Put);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
+
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
 app.MapDelete("/bookings/{id}", Bookings.Delete);
@@ -185,8 +183,9 @@ async Task db_reset_to_default(Config config)
   id INT AUTO_INCREMENT PRIMARY KEY,
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
-  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
-  day_offset TIMESTAMP,
+  day_kind ENUM ('Arrival', 'Stay', 'Departure') NOT NULL,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner') NOT NULL,
+  UNIQUE KEY unique_pkg_meal (package_id, day_kind, meal_type),
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
@@ -238,6 +237,10 @@ async Task db_reset_to_default(Config config)
 
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
   await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages (id, location_id, name, description, package_type) VALUES (1, 1, 'Weekend Stockholm', 'Arrival dinner + stay meals + departure breakfast', 'Fine dining');");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 1, 'Arrival', 'Dinner');");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 2, 'Stay', 'Lunch');");
+  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 3, 'Departure', 'Breakfast');");
   // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
   //, NOW() + INTERVAL 1 DAY
 }
