@@ -94,6 +94,7 @@ app.MapDelete("/packages_meals/{id}", package_meals.Delete);
 
 //endpoint for bookings
 app.MapGet("/bookings", Bookings_Get_All_Handler);
+app.MapDelete("/bookings/{id}", Bookings.Delete);
 
 app.Run();
 
