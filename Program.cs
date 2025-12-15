@@ -107,6 +107,8 @@ app.MapPost("/bookings", Bookings.Post);
 
 
 //endpoit for booking meals
+app.MapGet("/booking_meals", bookings_meals.GetAll);
+app.MapGet("/booking_meals/{id}", bookings_meals.Get);
 app.MapPut("/booking_meals/{id}", bookings_meals.Put);
 
 
