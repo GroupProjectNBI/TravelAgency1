@@ -5,6 +5,25 @@ using MySql.Data.MySqlClient;
 
 class bookings_meals
 {
+    public record Post_data(int bookings_id, DateOnly? date, string meal_type);
+    public static async Task<IResult>
+    Post(Post_data data, Config config)
+    {
+        string query = """
+        INSERT INTO booking_meals (bookings_id, date, meal_type)
+        VALUES (@bookings_id, @date, @meal_type)
+        """;
+
+        var parameters = new MySqlParameter[]
+        {
+        new("@bookings_id", data.bookings_id),
+        new("@date", data.date),
+        new("@meal_type", data.meal_type),
+        };
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+        return Results.Ok();
+
+    }
     public record BM_Data(int bookings_id, DateOnly date, string meal_type);
     public static async Task<List<BM_Data>>
     GetAll(Config config)
@@ -139,5 +158,14 @@ class bookings_meals
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
 
+    }
+
+    //DELETE
+    public static async Task Delete(int Id, Config config)
+    {
+        string query = "DELETE FROM booking_meals WHERE id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
     }
 }

@@ -116,6 +116,8 @@ app.MapDelete("/bookings/{id}", Bookings.Delete).RequireAuthorization(p => p.Req
 app.MapGet("/booking_meals", bookings_meals.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/booking_meals/{id}", bookings_meals.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/booking_meals/{id}", bookings_meals.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/booking_meals/{id}", bookings_meals.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/booking_meals", bookings_meals.Post).RequireAuthorization(p => p.RequireRole("admin"));
 
 app.Run();
 
