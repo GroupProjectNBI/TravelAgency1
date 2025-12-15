@@ -54,9 +54,9 @@ app.MapGet("/reset/{email}", Users.Reset);
 // endpoints for locations
 app.MapGet("/locations", Locations.Get_All);
 app.MapGet("/locations/search", Locations_Search_Handler);
-app.MapPost("/location", Locations_Post_Handler);
-app.MapGet("location/{id}", Locations_Get_Handler);
-app.MapDelete("/location/{id}", Locations_Delete_Handler);
+app.MapPost("/locations", Locations_Post_Handler);
+app.MapGet("/locations/{id}", Locations_Get_Handler);
+app.MapDelete("/locations/{id}", Locations_Delete_Handler);
 
 // endpoints for hotels 
 app.MapGet("/hotels", Hotels.GetAll);
