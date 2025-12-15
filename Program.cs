@@ -103,7 +103,7 @@ handler funktionerna undertill är bara mer kod som måste hanteras.
 */
 app.MapGet("/bookings", Bookings_Get_All_Handler);
 app.MapPost("/bookings", Bookings.Post);
-app.MapPost("/bookings/{id}", Bookings.Delete);
+app.MapDelete("/bookings/{id}", Bookings.Delete);
 
 
 
