@@ -21,9 +21,10 @@ app.MapGet("/register/{Id}", Users.Get);
 app.MapPost("/register", Users_Post_Handler);
 
 // reset all the tables for the databse
-app.MapDelete("/db", db_reset_to_default);
+app.MapDelete("/db", Data.db_reset_to_default);
 
 
+app.MapGet("/admin/get_users", Admin.GetAllUsers);
 
 // later use
 app.MapGet("/profile", Profile.Get);
@@ -110,153 +111,6 @@ app.MapPut("/booking_meals/{id}", bookings_meals.Put);
 app.MapPost("/booking_meals", bookings_meals.Post);
 
 app.Run();
-
-
-
-//void
-async Task db_reset_to_default(Config config)
-{
-
-  string users_create = """ 
-
-  /* adding a new table to the database : */
-
-
-  CREATE TABLE users
-  (
-  Id INT PRIMARY KEY AUTO_INCREMENT,
-  email VARCHAR(256) UNIQUE,
-  first_name VARCHAR(50),
-  last_name VARCHAR(100),
-  date_of_birth DATE,
-  password VARCHAR(256));
-  
-  CREATE TABLE password_request
-  (
-  user INT REFERENCES users(id),
-  temp_key binary(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID()))
-  /* expire_date  DATE NOT NULL */
-  );
-  CREATE TABLE countries
-  (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  name VARCHAR(100) NOT NULL
-  );
-
-  CREATE TABLE locations
-  (
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  countries_id INT NOT NULL,
-  city VARCHAR (100) NOT NULL,
-  FOREIGN KEY (countries_id) REFERENCES countries(id)
-  );
-
-  
-  CREATE TABLE hotels (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  location_id INT NOT NULL,
-  name VARCHAR(100) NOT NULL,
-  address VARCHAR(255) NOT NULL,
-  price_class INT NOT NULL,
-  has_breakfast BOOLEAN NOT NULL DEFAULT FALSE,
-  FOREIGN KEY (location_id) REFERENCES locations(id)
-  );
-
-  CREATE TABLE rooms (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  hotel_id INT NOT NULL,
-  room_number INT NOT NULL,
-  name ENUM ('Single', 'Double', 'Suite'),
-  capacity INT NOT NULL,
-  price_per_night DECIMAL(10,2) NOT NULL,
-  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
-  FOREIGN KEY (hotel_id) REFERENCES hotels(id)
-  );
-
-  CREATE TABLE restaurants (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  location_id INT NOT NULL,
-  name VARCHAR(100),
-  is_veggie_friendly BOOLEAN NOT NULL DEFAULT FALSE,
-  is_fine_dining BOOLEAN NOT NULL DEFAULT FALSE,
-  is_wine_focused BOOLEAN NOT NULL DEFAULT FALSE,
-  FOREIGN KEY (location_id) REFERENCES locations(id)
-  );
-
-  CREATE TABLE packages (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  location_id INT NOT NULL,
-  name VARCHAR(100),
-  description VARCHAR (254),
-  package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
-  FOREIGN KEY (location_id) REFERENCES locations(id)
-  );
-
-  CREATE TABLE packages_meals (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  package_id INT NOT NULL,
-  restaurant_id INT NOT NULL,
-  day_kind ENUM ('Arrival', 'Stay', 'Departure') NOT NULL,
-  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner') NOT NULL,
-  UNIQUE KEY unique_pkg_meal (package_id, day_kind, meal_type),
-  FOREIGN KEY (package_id) REFERENCES packages(id),
-  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
-  );
-
-  CREATE TABLE bookings (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  user_id INT NOT NULL,
-  location_id INT NOT NULL,
-  hotel_id INT NOT NULL,
-  package_id INT NOT NULL,
-  check_in DATE NOT NULL,
-  check_out DATE NOT NULL,
-  guests INT NOT NULL,
-  rooms INT NOT NULL,
-  status ENUM('pending','confirmed','cancelled'),
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  total_price DECIMAL(10,2) NOT NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (location_id) REFERENCES locations(id),
-  FOREIGN KEY (hotel_id) REFERENCES hotels(id),
-  FOREIGN KEY (package_id) REFERENCES packages(id)
-  );
-
-  CREATE TABLE booking_meals (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  bookings_id INT NOT NULL,
-  date DATE,
-  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
-  FOREIGN KEY (bookings_id) REFERENCES bookings(id)
-  );
-
-  """;
-
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS rooms");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS restaurants");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS hotels");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS locations");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS password_request");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO users(email, first_name, last_name, date_of_birth, password) VALUES ('edvin@example.com', 'Edvin', 'Lindborg', '1997-08-20', 'travelagency')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO countries (id, name) VALUES (1,'Sweden'),(2,'Norway'),(3,'Denmark')");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO locations VALUES(1, 1, 'Stockholm'),(2, 1, 'Malmoe'),(3, 1, 'Gothenburg'),(4, 2, 'Copenhagen'),(5, 2, 'Aarhus'),(6, 2, 'Rodby'),(7, 3, 'Oslo'),(8, 3, 'Stavanger'),(9, 3, 'Bergen')");
-
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0);");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO hotels (id, location_id, name, address, price_class, has_breakfast) VALUES(1, 1, 'SwingIn', 'Stockholsgatan', 5, 1)");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages (id, location_id, name, description, package_type) VALUES (1, 1, 'Weekend Stockholm', 'Arrival dinner + stay meals + departure breakfast', 'Fine dining');");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 1, 'Arrival', 'Dinner');");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 2, 'Stay', 'Lunch');");
-  await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type) VALUES (1, 3, 'Departure', 'Breakfast');");
-  // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
-  //, NOW() + INTERVAL 1 DAY
-}
 
 static async Task<IResult> Locations_Search_Handler(string search, Config config)
 {
@@ -389,9 +243,6 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
 // COMMIT;
 // END$$
 //   DELIMITER ;
-
-// ALTER TABLE Hotels
-//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
 
 
 // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
