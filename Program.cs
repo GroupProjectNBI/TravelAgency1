@@ -111,6 +111,7 @@ app.MapDelete("/bookings/{id}", Bookings.Delete);
 app.MapGet("/booking_meals", bookings_meals.GetAll);
 app.MapGet("/booking_meals/{id}", bookings_meals.Get);
 app.MapPut("/booking_meals/{id}", bookings_meals.Put);
+app.MapDelete("/booking_meals/{id}", bookings_meals.Delete);
 
 
 app.Run();
