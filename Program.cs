@@ -80,11 +80,6 @@ app.MapPost("/restaurants", Restaurants.Post);
 app.MapPut("/restaurants/{id}", Restaurants.Put);
 app.MapDelete("/restaurants/{id}", Restaurants.Delete);
 
-// endpoints for packages
-app.MapPost("/packages_meals", package_meals.Post);
-app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);//new
-
-
 // endpoint for packages 
 app.MapGet("/packages", Package.GetAll);
 app.MapGet("/packages/{Id}", Package.Get);
@@ -94,14 +89,24 @@ app.MapDelete("/packages/{id}", Package.DeletePackage);
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);
+app.MapPut("/packages_meals/{id}", package_meals.Put);
 app.MapDelete("/packages_meals/{id}", package_meals.Delete);
-//endpoint for bookings
+
+//endpoint for bookings   
+/*
+vi måste bestämma var vi hanterar valideringen. 
+Nu är det kod som är blandad i progam och i klasserna. 
+Program.cs är super lång så jag föreslår att varje validering görs 
+för varje funktion istället för att kladda i program.cs
+handler funktionerna undertill är bara mer kod som måste hanteras. 
+*/
 app.MapGet("/bookings", Bookings_Get_All_Handler);
+app.MapPost("/bookings", Bookings.Post);
+
+
 
 app.Run();
-
-
-
 
 static async Task<IResult> Locations_Search_Handler(string search, Config config)
 {
