@@ -24,9 +24,57 @@ class bookings_meals
         return Results.Ok();
 
     }
+    public record BM_Data(int bookings_id, DateOnly date, string meal_type);
+    public static async Task<List<BM_Data>>
+    GetAll(Config config)
+    {
+        List<BM_Data> book_meals = new();
+        string query = """
+            SELECT bookings_id,date,meal_type FROM booking_meals;
+        """;
+
+        using (var reader = await
+        MySqlHelper.ExecuteReaderAsync(config.db, query))
+        {
+
+            while (reader.Read())
+            {
+                DateOnly dob = DateOnly.FromDateTime(reader.GetDateTime(1));
+                book_meals.Add(new(
+                reader.GetInt32(0),
+                dob,
+                reader.GetString(2)
+                ));
+            }
+        }
+        return book_meals;
+    }
+
+    public record Get_BM(int bookings_id, DateOnly date, string meal_type);
+    public static async Task<Get_BM>
+    Get(int id, Config config)
+    {
+        Get_BM? result = null;
+        string query = "SELECT bookings_id,date,meal_type FROM booking_meals WHERE id = @id";
+        var parameters = new MySqlParameter[] { new("@id", id) };
+        using (var reader = await
+        MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
+        {
+            if (reader.Read())
+            {
+                DateOnly dob = DateOnly.FromDateTime(reader.GetDateTime(1));
+                result = new(
+                reader.GetInt32(0),
+                dob,
+                reader.GetString(2));
+            }
+        }
+        return result;
+
+    }
+
     public record Put_data(int bookings_id, DateOnly date, string meal_type);
     public static async Task<IResult>
-
   Put(int id, Put_data data, Config config)
     {
 
@@ -110,5 +158,14 @@ class bookings_meals
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
 
+    }
+
+    //DELETE
+    public static async Task Delete(int Id, Config config)
+    {
+        string query = "DELETE FROM booking_meals WHERE id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
     }
 }

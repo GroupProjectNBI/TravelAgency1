@@ -144,8 +144,13 @@ public class Bookings
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
   }
+  public static async Task Delete(int id, Config config)
+  {
+    string query = "DELETE FROM bookings WHERE id = @Id";
+    var parameters = new MySqlParameter[] { new("@Id", id) };
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
 
-
+  }
 }
-

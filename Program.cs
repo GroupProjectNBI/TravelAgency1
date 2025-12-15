@@ -103,11 +103,15 @@ handler funktionerna undertill är bara mer kod som måste hanteras.
 */
 app.MapGet("/bookings", Bookings_Get_All_Handler);
 app.MapPost("/bookings", Bookings.Post);
+app.MapDelete("/bookings/{id}", Bookings.Delete);
 
 
 
 //endpoit for booking meals
+app.MapGet("/booking_meals", bookings_meals.GetAll);
+app.MapGet("/booking_meals/{id}", bookings_meals.Get);
 app.MapPut("/booking_meals/{id}", bookings_meals.Put);
+app.MapDelete("/booking_meals/{id}", bookings_meals.Delete);
 app.MapPost("/booking_meals", bookings_meals.Post);
 
 app.Run();
