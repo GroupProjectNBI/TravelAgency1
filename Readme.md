@@ -9,7 +9,7 @@ Projektet använder en anpassad autentiseringslösning med Sessions och Middlewa
 För att kunna köra projektet behöver du ha följande installerat på din dator:
 
 1.  **C# / .NET SDK**
-    * .NET 8.0 (eller nyare).
+    * .NET 9.0 (eller nyare).
     * [Ladda ner här](https://dotnet.microsoft.com/download)
 2.  **MySQL Server**
     * Du behöver en lokal eller extern MySQL-databas som körs.
@@ -17,7 +17,7 @@ För att kunna köra projektet behöver du ha följande installerat på din dato
 3.  **Kodeditor**
     * Visual Studio 2022, Visual Studio Code, eller Rider.
 4.  **API Client** (För att testa endpoints)
-    * Thunder Client (VS Code extension), Postman eller Insomnia.
+    * Thunder Client (VS Code extension), Postman.
 
 ---
 
@@ -25,17 +25,20 @@ För att kunna köra projektet behöver du ha följande installerat på din dato
 
 ### 1. Klona eller ladda ner projektet
 Öppna en terminal i projektmappen.
-
+```bash
+git clone: git@github.com:GroupProjectNBI/TravelAgency1.git
+```
 ### 2. Sätt upp Databasen (MySQL)
 Öppna din MySQL-klient (t.ex. MySQL Workbench eller terminalen) och kör följande kommandon för att skapa databasen, användaren och tabellerna.
 
 **Steg A: Skapa databas och användare**
 ```sql
-CREATE DATABASE first_demo_server;
+CREATE DATABASE <DIN_DATABAS>;
 
-CREATE USER 'first_demo_server'@'localhost' IDENTIFIED BY 'first_demo_server';
 
-GRANT ALL PRIVILEGES ON first_demo_server.* TO 'first_demo_server'@'localhost';
+CREATE USER '<DITT_USER>'@'localhost' IDENTIFIED BY '<DITT_LÖSENORD>';
+
+GRANT ALL PRIVILEGES ON <DIN_DATABAS>.* TO '<DITT_USER>'@'localhost';
 
 FLUSH PRIVILEGES;
 ```
@@ -47,7 +50,7 @@ FLUSH PRIVILEGES;
 
 ```csharp
 // I Program.cs
-Config config = new("server=127.0.0.1;uid=DITT_USER;pwd=DITT_LÖSENORD;database=travelagency");
+Config config = new("server=127.0.0.1;uid=DITT_USER;pwd=DITT_LÖSENORD;database=<din_databas>");
 ```
 ### 4. Installera beroenden (Packages)
 För att projektet ska fungera måste du installera MySQL-kopplingen. Kör följande kommando i din terminal:
