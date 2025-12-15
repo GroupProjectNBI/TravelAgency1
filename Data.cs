@@ -62,7 +62,6 @@ class Data
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
-  
   CREATE TABLE rooms (
   id INT AUTO_INCREMENT PRIMARY KEY,
   hotel_id INT NOT NULL,
@@ -97,8 +96,9 @@ class Data
   id INT AUTO_INCREMENT PRIMARY KEY,
   package_id INT NOT NULL,
   restaurant_id INT NOT NULL,
-  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
-  day_offset TIMESTAMP,
+  day_kind ENUM ('Arrival', 'Stay', 'Departure') NOT NULL,
+  meal_type ENUM ('Breakfast', 'Lunch', 'Dinner') NOT NULL,
+  UNIQUE KEY unique_pkg_meal (package_id, day_kind, meal_type),
   FOREIGN KEY (package_id) REFERENCES packages(id),
   FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
   );
@@ -279,8 +279,8 @@ class Data
     (49, 'Fredrikstad Fort', 'Historic fort visit', 'Veggie'),(50, 'Hillerod Palace', 'Palace and gardens', 'Fine dining');
     ");
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, @"INSERT INTO packages_meals(package_id, restaurant_id, meal_type, day_offset) VALUES(1, 3, 'Lunch', '2025-12-24'),
-    (1, 1, 'Breakfast', '2025-06-01 08:00:00'),(2, 2, 'Lunch','2025-06-02 12:00:00'),(3, 3, 'Dinner',    '2025-06-03 19:00:00'),(4, 4, 'Lunch',     '2025-06-04 12:00:00');");
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, @"INSERT INTO packages_meals (package_id, restaurant_id, day_kind, meal_type, day_offset) VALUES(1, 3, 'Lunch', '2025-12-24'),
+    (1, 1, 'Departure', 'Breakfast', '2025-06-01 08:00:00'),(2, 2,'Stay', 'Lunch','2025-06-02 12:00:00'),(3, 3, 'Arrival', 'Dinner', '2025-06-03 19:00:00'),(4, 4,''Stay, 'Lunch', '2025-06-04 12:00:00');");
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, @"INSERT INTO bookings (user_id, location_id, hotel_id, package_id, check_in, check_out, guests, rooms, status, total_price) 
     VALUES (1,3,1,1, '2025-12-24', '2026-01-01', 2, 1, 'pending', 1000.00),(1,1,1,1,'2025-06-01','2025-06-05',2,1,'confirmed',499.00),(2,2,2,2,'2025-06-02','2025-06-06',1,1,'pending',299.00),
