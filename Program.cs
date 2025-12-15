@@ -106,6 +106,10 @@ app.MapPost("/bookings", Bookings.Post);
 
 
 
+//endpoit for booking meals
+app.MapPut("/booking_meals/{id}", bookings_meals.Put);
+
+
 app.Run();
 
 static async Task<IResult> Locations_Search_Handler(string search, Config config)
