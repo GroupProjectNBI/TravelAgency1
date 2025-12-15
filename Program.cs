@@ -235,9 +235,6 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
 // END$$
 //   DELIMITER ;
 
-// ALTER TABLE Hotels
-//   ADD FOREIGN KEY (rooms) REFERENCES Rooms(Id);
-
 
 // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
 //, NOW() + INTERVAL 1 DAY
