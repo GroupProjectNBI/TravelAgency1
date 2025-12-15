@@ -15,7 +15,7 @@ static class Login
 
     Post(Post_Args credentials, Config config, HttpContext ctx)
     {
-        string query = "SELECT id, role FROM users WHERE email = @email AND password = @password";
+        string query = "SELECT users.id, roles.role FROM users INNER JOIN roles ON users.role_id = roles.id WHERE users.email = @email AND users.password = @password";
 
         var parameters = new MySqlParameter[]
         {
@@ -29,9 +29,10 @@ static class Login
         // Om vi hittar en rad (ReadAsync returnerar true)
         if (await reader.ReadAsync())
         {
+
             int id = reader.GetInt32("id");
             string role = reader.GetString("role");
-
+            Console.WriteLine(id + "  " + role);
             if (ctx.Session.IsAvailable)
             {
                 ctx.Session.SetInt32("user_id", id);
