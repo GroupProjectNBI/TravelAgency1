@@ -1,8 +1,27 @@
 global using MySql.Data.MySqlClient;
 using TravelAgency;
+using System.Text.RegularExpressions;
 
-Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
 var builder = WebApplication.CreateBuilder(args);
+
+// Läs connection string (från appsettings eller env: ConnectionStrings__DefaultConnection)
+var conn = builder.Configuration.GetConnectionString("DefaultConnection")
+           ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+           ?? throw new InvalidOperationException("No DB connection string configured.");
+
+conn = conn.Trim().Replace("\r", "").Replace("\n", "").Trim('"').Trim('\'');
+if (string.IsNullOrWhiteSpace(conn))
+{
+  throw new InvalidOperationException("No DB connection string configured. Set ConnectionStrings__DefaultConnection.");
+}
+
+// Maskera lösenord innan loggning
+var safeConn = Regex.Replace(conn, @"(Pwd|Password)=[^;]*", "$1=****", RegexOptions.IgnoreCase);
+
+// Skapa config men vänta med loggning tills app finns
+Config config = new(conn);
+
+// Registrera tjänster
 builder.Services.AddSingleton(config);
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
