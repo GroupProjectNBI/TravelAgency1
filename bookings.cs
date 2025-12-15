@@ -5,19 +5,19 @@ using MySql.Data.MySqlClient;
 public class Bookings
 {
   public record Booking_Data(
-int id,
-int user_id,
-int location_id,
-int hotel_id,
-int package_id,
-DateTime check_in,
-DateTime check_out,
-int guests,
-int rooms,
-string status, //enum i DB string i c#
-DateTime created_at,
-decimal total_price
-  );
+  int id,
+  int user_id,
+  int location_id,
+  int hotel_id,
+  int package_id,
+  DateTime check_in,
+  DateTime check_out,
+  int guests,
+  int rooms,
+  string status, //enum i DB string i c#
+  DateTime created_at,
+  decimal total_price
+    );
   private static Booking_Data Read_Booking(MySqlDataReader reader)
   {
     return new Booking_Data(
@@ -97,7 +97,8 @@ decimal total_price
       return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
   }
-  public record Change_Args(
+  // and handles the HTTP response
+  public record UpdateBookingArgs(
       int user_id,
       int location_id,
       int hotel_id,
@@ -107,8 +108,44 @@ decimal total_price
       int guests,
       int rooms,
       string status,
-      DateOnly updated_at,
       decimal total_price
   );
+  public static async Task Update(int id, UpdateBookingArgs args, Config config)
+  {
+    string query = """
+        UPDATE bookings
+        SET user_id = @user_id,
+            location_id = @location_id,
+            hotel_id = @hotel_id,
+            package_id = @package_id,
+            check_in = @check_in,
+            check_out = @check_out,
+            guests = @guests,
+            rooms = @rooms,
+            status = @status,
+            total_price = @total_price
+        WHERE id = @id;
+    """;
+
+    var parameters = new MySqlParameter[]
+    {
+        new("@id", id),
+        new("@user_id", args.user_id),
+        new("@location_id", args.location_id),
+        new("@hotel_id", args.hotel_id),
+        new("@package_id", args.package_id),
+        new("@check_in", args.check_in),
+        new("@check_out", args.check_out),
+        new("@guests", args.guests),
+        new("@rooms", args.rooms),
+        new("@status", args.status),
+        new("@total_price", args.total_price)
+    };
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+  }
+
+
 
 }
+
