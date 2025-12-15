@@ -92,4 +92,13 @@ class bookings_meals
         }
 
     }
+
+    //DELETE
+    public static async Task Delete(int Id, Config config)
+    {
+        string query = "DELETE FROM booking_meals WHERE id = @Id";
+        var parameters = new MySqlParameter[] { new("@Id", Id) };
+
+        await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    }
 }
