@@ -5,6 +5,25 @@ using MySql.Data.MySqlClient;
 
 class Package
 {
+    private record HotelDto(
+    int Id,
+    string Name,
+    string Address,
+    string City,
+    string Country,
+    int Price,
+    bool HasBreakfast
+);
+
+    private record PackageDto(
+        int Id,
+        string Name,
+        string Description,
+        string Type,
+        string City,
+        string Country
+    );
+    public record fullTell(string name, string address, int price, bool has_breakfast);
     public record GetAll_Data(int id, int location_id, string name, string description, string package_type);
     public static async Task<List<GetAll_Data>>
     GetAll(Config config)
@@ -50,6 +69,101 @@ class Package
             }
         }
         return result;
+    }
+    public static async Task<IResult> GetDetails(int locationid, int packageid, int hotelid, Config config)
+    {
+        List<HotelDto> hotels = new();
+        List<PackageDto> packages = new();
+
+        // ---------------------------------------------------------
+        // STEP 1: Get Hotel
+        // ---------------------------------------------------------
+        var hotelSql = @"
+         SELECT     h.id, 
+                    h.name, 
+                    h.address, 
+                    h.price_class, 
+                    h.has_breakfast,
+                    l.city,
+                    c.name as country 
+ 
+        FROM hotels h
+        JOIN locations l ON h.location_id = l.id
+        JOIN countries c ON l.countries_id = c.id
+        WHERE h.id = @hotelid AND l.city = (select city from locations where id = @locationid)";
+
+        var hotelParams = new MySqlParameter[]
+        {
+        new("@locationid", locationid),
+        new("@hotelid", hotelid)
+        };
+
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, hotelSql, hotelParams))
+        {
+            while (await reader.ReadAsync())
+            {
+                // Add to the list
+                hotels.Add(new HotelDto(
+                 Id: reader.GetInt32("id"),
+                Name: reader.GetString("name"),
+                Address: reader.GetString("address"),
+                City: reader.GetString("city"),
+                Country: reader.GetString("country"),
+                Price: reader.GetInt32("price_class"),
+                HasBreakfast: reader.GetBoolean("has_breakfast")
+                ));
+            }
+        }
+
+        // ---------------------------------------------------------
+        // STEP 2: Get Package
+        // ---------------------------------------------------------
+        var packageSql = @"
+        SELECT p.id, 
+        p.name, 
+        p.description, 
+        p.package_type,
+        l.city,
+        c.name as country
+        FROM packages p
+        JOIN locations l ON p.location_id = l.id
+        JOIN countries c ON l.countries_id = c.id
+        WHERE p.id = @packageid AND l.city = (select city from locations where id = @locationid)";
+
+        var packageParams = new MySqlParameter[]
+        {
+        new("@locationid", locationid),
+        new("@packageid", packageid)
+        };
+
+        // Note: Changed 'hotelSql' to 'packageSql' here so it executes the correct query
+        using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, packageSql, packageParams))
+        {
+            while (await reader.ReadAsync())
+            {
+                packages.Add(new PackageDto(
+                Id: reader.GetInt32("id"),
+                Name: reader.GetString("name"),
+                Description: reader.GetString("description"),
+                Type: reader.GetString("package_type"),
+                City: reader.GetString("city"),
+                Country: reader.GetString("country")
+                ));
+            }
+        }
+
+        // ---------------------------------------------------------
+        // STEP 3: Done! Return the object
+        // ---------------------------------------------------------
+
+        // Create the response object containing both lists
+        var response = new
+        {
+            hotels = hotels,
+            package = packages
+        };
+
+        return Results.Ok(response);
     }
     public record Post_Args(int location_id, string name, string description, int package_type);
     public static async Task<IResult>

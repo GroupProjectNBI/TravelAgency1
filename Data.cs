@@ -57,20 +57,22 @@ class Data
     location_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     price_class INT NOT NULL,
     has_breakfast BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
   CREATE TABLE rooms (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  hotel_id INT NOT NULL,
-  room_number INT NOT NULL,
-  name ENUM ('Single', 'Double', 'Suite') NOT NULL,
-  capacity INT NOT NULL,
-  price_per_night DECIMAL(10,2) NOT NULL,
-  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
-  FOREIGN KEY (hotel_id) REFERENCES hotels(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hotel_id INT NOT NULL,
+    room_number INT NOT NULL,
+    name ENUM ('Single', 'Double', 'Suite') NOT NULL,
+    capacity INT NOT NULL,
+    price_per_night DECIMAL(10,2) NOT NULL,
+    UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
+    FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
   CREATE TABLE restaurants (
@@ -79,6 +81,8 @@ class Data
     name VARCHAR(100),
     is_veggie_friendly BOOLEAN NOT NULL DEFAULT FALSE,
     is_fine_dining BOOLEAN NOT NULL DEFAULT FALSE,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     is_wine_focused BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
@@ -130,7 +134,61 @@ class Data
   FOREIGN KEY (bookings_id) REFERENCES bookings(id)
   );
 
+
+  /* STORE PROCEDURES for handle capacity per hotel, dont use that anywhere */
+  DELIMITER //
+
+  DROP PROCEDURE IF EXISTS AddRoom; -- Ta bort den gamla först
+
+  CREATE PROCEDURE AddRoom(
+    IN p_hotel_id INT,
+    -- IN p_room_number INT,  <-- DENNA TAS BORT, VI RÄKNAR UT DEN SJÄLV
+    IN p_name VARCHAR(50), 
+    IN p_capacity INT,
+    IN p_price DECIMAL(10,2)
+  )
+  BEGIN
+    DECLARE v_current_total_capacity INT DEFAULT 0;
+    DECLARE v_max_cap INT DEFAULT 0;
+    DECLARE v_new_total_capacity INT;
+    DECLARE v_next_room_number INT; -- Variabel för det nya numret
+
+    -- A. Hämta hotellets maxgräns
+    SELECT max_cap INTO v_max_cap 
+    FROM hotels WHERE id = p_hotel_id;
+
+    -- B. Räkna ut nuvarande kapacitet
+    SELECT IFNULL(SUM(capacity), 0) INTO v_current_total_capacity 
+    FROM rooms WHERE hotel_id = p_hotel_id;
+
+    -- C. RÄKNA UT NÄSTA RUMSNUMMER
+    -- Tar det högsta numret som finns. Om null (hotellet är tomt), ta 99.
+    -- Resultatet + 1 blir alltså 100 för första rummet.
+    SELECT IFNULL(MAX(room_number), 99) + 1 INTO v_next_room_number
+    FROM rooms WHERE hotel_id = p_hotel_id;
+
+    -- D. Kolla om vi får plats (kapacitetsmässigt)
+    SET v_new_total_capacity = v_current_total_capacity + p_capacity;
+
+    IF v_max_cap IS NOT NULL AND v_new_total_capacity > v_max_cap THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Capacity limit exceeded: Cannot add room.';
+    ELSE
+        -- E. Skapa rummet med det uträknade numret (v_next_room_number)
+        INSERT INTO rooms (hotel_id, room_number, name, capacity, price_per_night)
+        VALUES (p_hotel_id, v_next_room_number, p_name, p_capacity, p_price);
+
+        -- F. Uppdatera hotellets kapacitet
+        UPDATE hotels SET capacity = v_new_total_capacity WHERE id = p_hotel_id;
+        
+        -- G. (Optionellt) Returnera det nya numret så API:et vet vad det blev
+        SELECT v_next_room_number as NewRoomNumber;
+    END IF;
+  END //
+
+  DELIMITER ;
   """;
+
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
