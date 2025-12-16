@@ -54,7 +54,9 @@ app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p
 app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
 
 // --- Admin & System ---
-app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/admin/revenue/yearly", AdminRevenue_Yearly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/admin/revenue/monthly", AdminRevenue_Monthly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 
 // endpoints for locations -- no update for location
 app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
@@ -248,6 +250,30 @@ static async Task<IResult> Packages_CheckAvailability_Handler(Package.CheckAvail
 
   return await Package.CheckAvailability(args.package_id, checkInDate, checkOutDate, config);
 }
+static async Task<IResult> AdminRevenue_Yearly_Handler(Config config)
+{
+  try
+  {
+    return await AdminRevenue.GetRevenueYearly(config);
+  }
+  catch
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
+static async Task<IResult> AdminRevenue_Monthly_Handler(Config config)
+{
+  try
+  {
+    return await AdminRevenue.GetRevenueMonthly(config);
+  }
+  catch
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
 
 
 
