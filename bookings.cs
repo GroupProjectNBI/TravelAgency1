@@ -95,8 +95,8 @@ Config config)
             new("@location_id", bookings.location_id),
             new("@hotel_id", bookings.hotel_id),
             new("@package_id", bookings.package_id),
-            new("@check_in", bookings.check_in),
-            new("@check_out", bookings.check_out),
+            new("@check_in", bookings.check_in.ToString("yyyy-MM-dd")),
+            new("@check_out", bookings.check_out.ToString("yyyy-MM-dd")),
             new("@guests", bookings.guests),
             new("@rooms", bookings.rooms),
             new("@status", bookings.status),
@@ -135,7 +135,7 @@ Config config)
       string status,
       decimal total_price
   );
-  public static async Task Update(int id, UpdateBookingArgs args, Config config)
+  public static async Task Put(int id, UpdateBookingArgs args, Config config)
   {
     string query = """
         UPDATE bookings
@@ -159,8 +159,8 @@ Config config)
         new("@location_id", args.location_id),
         new("@hotel_id", args.hotel_id),
         new("@package_id", args.package_id),
-        new("@check_in", args.check_in),
-        new("@check_out", args.check_out),
+        new("@check_in", args.check_in.ToString("yyyy-MM-dd")),
+        new("@check_out", args.check_out.ToString("yyyy-MM-dd")),
         new("@guests", args.guests),
         new("@rooms", args.rooms),
         new("@status", args.status),
