@@ -1,36 +1,40 @@
 global using MySql.Data.MySqlClient;
 using TravelAgency;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 
-Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
+// --- 1. Konfiguration och Services ---
 var builder = WebApplication.CreateBuilder(args);
+
+// Databas-config (Överväg att flytta detta till appsettings.json i framtiden)
+Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
 builder.Services.AddSingleton(config);
+
+// Caching och Session
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
   options.Cookie.HttpOnly = true;
   options.Cookie.IsEssential = true;
+  options.IdleTimeout = TimeSpan.FromMinutes(30); // Logga ut vid inaktivitet
 });
 
+// Autentisering (Kräver din AuthExtensions.cs fil)
+builder.Services.AddTravelAgencyAuthentication();
+
+// Auktorisering
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
-app.UseSession();
 
-// endpoints for users
-app.MapGet("/register", Users.GetAll);
-app.MapGet("/register/{Id}", Users.Get);
-// app.MapPost("/register", Users.Post);
-app.MapPost("/register", Users_Post_Handler);
+// --- 2. Middleware Pipeline (Ordningen är viktig!) ---
+app.UseSession();                           // Läs in kakan
+app.UseMiddleware<SessionAuthMiddleware>(); // Omvandla session till User Claims
+app.UseAuthorization();                     // Kontrollera behörighet
 
-// reset all the tables for the databse
-app.MapDelete("/db", Data.db_reset_to_default);
+// --- 3. Endpoints ---
 
-
-app.MapGet("/admin/get_users", Admin.GetAllUsers);
-
-// later use
-app.MapGet("/profile", Profile.Get);
-
-
-// endpoints for login
+// --- Login & Auth ---
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
   bool success = await Login.Post(credentials, config, ctx);
@@ -38,89 +42,92 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
   if (!success)
   {
     return Results.Json(
-    new { message = "Unvalid credentials" },
-    statusCode: StatusCodes.Status401Unauthorized);
+        new { message = "Invalid credentials" },
+        statusCode: StatusCodes.Status401Unauthorized);
   }
 
   return Results.Ok(new { message = "Login successful" });
-});
-// app.MapPost("/login", Login.Post);
-app.MapDelete("/login", Login.Delete);
+}).RequireAuthorization(p => p.RequireRole("admin"));
 
-// enpoint for reset password
-app.MapPatch("/newpassword/{temp_key}", Users.Patch);
-app.MapGet("/reset/{email}", Users.Reset);
+app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
 
-// endpoints for locations
-app.MapGet("/locations", Locations.Get_All);
-app.MapGet("/locations/search", Locations_Search_Handler);
-app.MapPost("/locations", Locations_Post_Handler);
-app.MapGet("/locations/{id}", Locations_Get_Handler);
-app.MapDelete("/locations/{id}", Locations_Delete_Handler);
+// --- Admin & System ---
+app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
 
-// endpoints for hotels 
-app.MapGet("/hotels", Hotels.GetAll);
-app.MapGet("/hotels/{Id}", Hotels.Get);
-app.MapPost("/hotels", Hotels.Post);
-app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel);
-app.MapPut("/hotels/{id}", Hotels.Put);
+// endpoints for locations -- no update for location
+app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/locations/search", Locations_Search_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/locations/{id}", Locations_Get_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/locations", Locations_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/locations/{id}", Locations_Delete_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 
-//endpoints for rooms
-app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel);
-app.MapGet("/rooms", Rooms.GetAll);
-app.MapGet("/rooms/{id}", Rooms.Get);
-app.MapPost("/rooms", Rooms_Post_Handler);
-app.MapPut("/rooms/{id}", Rooms_Put_Handler);
-app.MapDelete("/rooms/{id}", Rooms.Delete);
+app.MapGet("/admin/get_users", Admin.GetAllUsers)
+   .RequireAuthorization(p => p.RequireRole("admin"));
 
-// endpoints for restaurants
-app.MapGet("/restaurants", Restaurants.GetAll);
-app.MapGet("/restaurants/{id}", Restaurants.Get);
-app.MapPost("/restaurants", Restaurants.Post);
-app.MapPut("/restaurants/{id}", Restaurants.Put);
-app.MapDelete("/restaurants/{id}", Restaurants.Delete);
+// --- Users ---
+app.MapGet("/register", Users.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/register/{Id}", Users.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/register", Users_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/profile", Profile.Get).RequireAuthorization(); // Kräver inloggning --- bra att ha
 
-// endpoint for packages 
-app.MapGet("/packages", Package.GetAll);
-app.MapGet("/packages/{Id}", Package.Get);
-app.MapPost("/packages", Package.Post);
-app.MapPut("/packages/{id}", Package.Put);
-app.MapDelete("/packages/{id}", Package.DeletePackage);
+// --- Hotels ---
+app.MapGet("/hotels", Hotels.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/hotels/{Id}", Hotels.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/hotels", Hotels.Post).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/hotels/{Id}", Hotels.DeleteHotel).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/hotels/{id}", Hotels.Put).RequireAuthorization(p => p.RequireRole("admin"));
 
-// endpoints for package meals
-app.MapPost("/packages_meals", package_meals.Post);
-app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler);
-app.MapPut("/packages_meals/{id}", package_meals.Put);
-app.MapDelete("/packages_meals/{id}", package_meals.Delete);
+// --- Rooms ---
+app.MapGet("/hotels/{hotelId}/rooms", Rooms.GetByHotel).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/rooms", Rooms.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/rooms/{id}", Rooms.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/rooms", Rooms_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/rooms/{id}", Rooms_Put_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/rooms/{id}", Rooms.Delete).RequireAuthorization(p => p.RequireRole("admin"));
 
-//endpoint for bookings   
-/*
-vi måste bestämma var vi hanterar valideringen. 
-Nu är det kod som är blandad i progam och i klasserna. 
-Program.cs är super lång så jag föreslår att varje validering görs 
-för varje funktion istället för att kladda i program.cs
-handler funktionerna undertill är bara mer kod som måste hanteras. 
-*/
-app.MapGet("/bookings", Bookings_Get_All_Handler);
-app.MapPost("/bookings", Bookings.Post);
-app.MapDelete("/bookings/{id}", Bookings.Delete);
-app.MapPut("/bookings/{id}", Bookings.Put);
+// --- Restaurants ---
+app.MapGet("/restaurants", Restaurants.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/restaurants/{id}", Restaurants.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/restaurants", Restaurants.Post).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/restaurants/{id}", Restaurants.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/restaurants/{id}", Restaurants.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+
+// --- Packages ---
+app.MapGet("/packages", Package.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
+
+// --- Package Meals ---
+app.MapPost("/packages_meals", package_meals.Post).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/packages_meals", PackagesMeals_Get_All_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/packages_meals/{id}", package_meals.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/packages_meals/{id}", package_meals.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+
+// --- Bookings ---
+app.MapGet("/bookings", Bookings_Get_All_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/bookings", Bookings.Post).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/bookings/{id}", Bookings.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/bookings/{id}", Bookings.Put).RequireAuthorization(p => p.RequireRole("admin"));
 
 
-
-//endpoit for booking meals
-app.MapGet("/booking_meals", bookings_meals.GetAll);
-app.MapGet("/booking_meals/{id}", bookings_meals.Get);
-app.MapPut("/booking_meals/{id}", bookings_meals.Put);
-app.MapDelete("/booking_meals/{id}", bookings_meals.Delete);
-app.MapPost("/booking_meals", bookings_meals.Post);
+// --- Booking Meals ---
+app.MapGet("/booking_meals", bookings_meals.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/booking_meals/{id}", bookings_meals.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPut("/booking_meals/{id}", bookings_meals.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/booking_meals/{id}", bookings_meals.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/booking_meals", bookings_meals.Post).RequireAuthorization(p => p.RequireRole("admin"));
 
 app.Run();
+
+// --- 4. Local Handler Functions ---
 
 static async Task<IResult> Locations_Search_Handler(string search, Config config)
 {
   try
-
   {
     var result = await Locations.Search(search, config);
     return Results.Ok(result);
@@ -130,6 +137,7 @@ static async Task<IResult> Locations_Search_Handler(string search, Config config
     return Results.BadRequest(new { Message = ex.Message });
   }
 }
+
 static async Task<IResult> Locations_Get_Handler(int id, Config config)
 {
   var location = await Locations.Get(config, id);
@@ -139,6 +147,7 @@ static async Task<IResult> Locations_Get_Handler(int id, Config config)
   }
   return Results.Ok(location);
 }
+
 static async Task<IResult> Locations_Post_Handler(Post_Location_Args args, Config config)
 {
   try
@@ -151,6 +160,7 @@ static async Task<IResult> Locations_Post_Handler(Post_Location_Args args, Confi
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
 static async Task<IResult> Locations_Delete_Handler(int id, Config config)
 {
   int affectedRows = await Locations.Delete(id, config);
@@ -161,11 +171,11 @@ static async Task<IResult> Locations_Delete_Handler(int id, Config config)
   }
   return Results.NoContent();
 }
+
 static async Task<IResult> Users_Post_Handler(Users.Post_Args user, Config config)
 {
   var (status, userId) = await Users.Post(user, config);
   return status switch
-
   {
     Users.RegistrationStatus.Success => Results.Created($"/register/{userId}", new { Message = "Account created." }),
     Users.RegistrationStatus.EmailConflict => Results.Conflict(new { Message = "Email already exists." }),
@@ -181,20 +191,15 @@ static async Task<IResult> Rooms_Post_Handler(Rooms.Post_Args room, Config confi
   return status switch
   {
     Rooms.RoomCreationStatus.Success => Results.Created("", roomId),
-
     Rooms.RoomCreationStatus.InvalidFormat => Results.BadRequest(new { Message = "Invalid room data." }),
-
     Rooms.RoomCreationStatus.HotelNotFound => Results.NotFound(new { Message = "Hotel not found." }),
-
     _ => Results.StatusCode(500)
-
   };
 }
 
 static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config config)
 {
   var status = await Rooms.Put(id, room, config);
-
   return status switch
   {
     Rooms.RoomUpdateStatus.Success => Results.NoContent(),
@@ -204,6 +209,7 @@ static async Task<IResult> Rooms_Put_Handler(int id, Rooms.Put_Args room, Config
     _ => Results.StatusCode(500)
   };
 }
+
 static async Task<IResult> PackagesMeals_Get_All_Handler(Config config)
 {
   try
@@ -216,6 +222,7 @@ static async Task<IResult> PackagesMeals_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
 static async Task<IResult> Bookings_Get_All_Handler(Config config)
 {
   try
@@ -228,35 +235,3 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
-
-
-// DELIMITER $$
-//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
-//   BEGIN
-//     START TRANSACTION;
-
-// INSERT INTO password_request (`user`)
-//     SELECT u.id
-//     FROM users u
-//     WHERE u.email = p_email;
-
-// IF ROW_COUNT() = 0 THEN
-//   ROLLBACK;
-// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
-// END IF;
-
-// COMMIT;
-// END$$
-//   DELIMITER ;
-
-
-// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
-//, NOW() + INTERVAL 1 DAY
-
-
-//List<Users> UsersGet()
-//{
-// return Users;
-//}
-//Users? UsersGetById(int Id)
-// Test
