@@ -41,7 +41,6 @@ public class Admin
         {
             return Results.Unauthorized();
         }
-
     }
     public record HotelOccupancyDto(int HotelId, string HotelName, int TotalRoomsBooked);
 
@@ -73,7 +72,6 @@ public class Admin
         return result;
     }
 
-
     public static async Task<IResult> AdminOccupancy_Handler(Config config)
     {
         try
@@ -86,6 +84,4 @@ public class Admin
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
-
-
 }

@@ -21,7 +21,6 @@ public class SessionAuthMiddleware
                 new Claim(ClaimTypes.NameIdentifier, userId.Value.ToString()),
                 new Claim(ClaimTypes.Role, userRole)
             };
-
             // VIKTIGT: "SessionAuth" måste matcha det du skrev i AuthExtensions/Program.cs
             var identity = new ClaimsIdentity(claims, "SessionAuth");
             var principal = new ClaimsPrincipal(identity);

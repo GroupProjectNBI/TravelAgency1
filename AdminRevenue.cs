@@ -47,7 +47,6 @@ public static class AdminRevenue
       decimal total_revenue,
       int total_bookings
   );
-
   public static async Task<IResult> GetRevenueMonthly(Config config)
   {
     List<RevenueMonthly_Data> result = new();

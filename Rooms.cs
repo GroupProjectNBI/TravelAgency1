@@ -185,7 +185,6 @@ class Rooms
 
         return (RoomCreationStatus.Success, roomId);
 
-
     }
 
     public enum RoomUpdateStatus
@@ -232,7 +231,6 @@ class Rooms
         {
             return RoomUpdateStatus.HotelNotFound;
         }
-
         //update room
         string query = """
         UPDATE rooms

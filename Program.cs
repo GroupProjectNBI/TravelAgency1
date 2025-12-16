@@ -278,8 +278,6 @@ static async Task<IResult> AdminRevenue_Monthly_Handler(Config config)
 }
 
 
-
-
 //
 // DELIMITER $$
 //   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))

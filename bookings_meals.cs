@@ -49,7 +49,6 @@ class bookings_meals
         }
         return book_meals;
     }
-
     public record Get_BM(int bookings_id, DateOnly date, string meal_type);
     public static async Task<Get_BM>
     Get(int id, Config config)
@@ -72,7 +71,6 @@ class bookings_meals
         return result;
 
     }
-
     public record Put_data(int bookings_id, DateOnly date, string meal_type);
     public static async Task<IResult>
   Put(int id, Put_data data, Config config)

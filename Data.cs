@@ -88,7 +88,7 @@ class Data
     location_id INT NOT NULL,
     name VARCHAR(100),
     description VARCHAR (254),
-    package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
+    package_type ENUM ('Veggie', 'Wine', 'Fine dining'),
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
@@ -156,10 +156,6 @@ BEGIN
     END IF;
 END;
 ";
-
-
-
-
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
@@ -253,58 +249,58 @@ END;
     VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0),(1,'Rosario Bistro',1,0,0),
     (2,'Seaside Pizza',1,0,0),(3,'Gothenburg Grill',0,0,1),(4,'Oslo Fine',1,1,1),(5,'Bryggen Cafe',1,0,0),
     (6,'Trondheim Taverna',0,0,0),(7,'Copenhagen Table',1,1,1),(8,'Aarhus Kitchen',1,0,0),(9,'Odense Deli',1,0,0),(10,'Helsinki Harbor',0,1,1),
-    (11,'Espoo Eats',1,0,0),(12,'Tampere Tapas',1,0,0),(13,'Reykjavik Fish',0,1,0),(14,'Akureyri Cafe',1,0,0),(15,'Berlin Brasserie',1,1,1),
+    (11,'Espoo Eats',1,0,0),(12,'Tampere Tapas',1,0,0),(13,'Reykjavik Wine',0,1,0),(14,'Akureyri Cafe',1,0,0),(15,'Berlin Brasserie',1,1,1),
     (16,'Munich Biergarten',0,0,1),(17,'Hamburg Harbor Grill',1,0,1),(18,'Amsterdam Pancakes',1,0,0),(19,'Rotterdam Fusion',1,1,1),(20,'Utrecht Corner',1,0,0),
     (21,'Paris Gourmet',1,1,1),(22,'Lyon Bistro',1,1,1),(23,'Nice Seafood',0,1,1),(24,'Madrid Tapas',1,0,1),(25,'Barcelona Beach',1,0,1),
     (26,'Valencia Paella',0,1,0),(27,'Rome Trattoria',1,0,1),(28,'Milan Ristorante',1,1,1),(29,'Venice Osteria',1,1,0),(30,'Uppsala Cafe',1,0,0),
-    (31,'Vasteras Diner',1,0,0),(32,'Linkoping Kitchen',1,0,0),(33,'Kristiansand Fish',0,1,0),(34,'Tromso Arctic',1,0,0),(35,'Helsingor Harbor',1,0,0),
+    (31,'Vasteras Diner',1,0,0),(32,'Linkoping Kitchen',1,0,0),(33,'Kristiansand Wine',0,1,0),(34,'Tromso Arctic',1,0,0),(35,'Helsingor Harbor',1,0,0),
     (36,'Roskilde Grill',1,0,0),(37,'Oulu Cafe',1,0,0),(38,'Selfoss Bistro',1,0,0),(39,'Frankfurt Steak',0,1,1),(40,'Stuttgart Table',1,0,1),
     (41,'Eindhoven Eats',1,0,0),(42,'Bordeaux Winebar',1,1,1),(43,'Seville Tapas',1,0,1),(44,'Bilbao Pintxos',1,0,1),(45,'Naples Pizza',1,0,0),
     (46,'Turin Truffle',1,1,1),(47,'Kalmar Harbor',1,0,0),(48,'Halmstad Beach Cafe',1,0,0),(49,'Fredrikstad Fjord',1,0,0),(50,'Hillerod Garden',1,0,0);");
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, @"
     INSERT INTO packages (location_id, name, description, package_type) VALUES
-    (1, 'package_fish', 'a nice fish package for the drunken *hick*', 'Fish'),(1, 'Stockholm Veggie', 'Veggie weekend in Stockholm', 'Veggie'),
-    (2, 'Malmoe Fish', 'Seafood special in Malmoe', 'Fish'),(3, 'Gothenburg Gourmet', 'Fine dining in Gothenburg', 'Fine dining'),
-    (4, 'Oslo Explorer', 'City break in Oslo', 'Fish'),(5, 'Bergen Fjord', 'Fjord and food', 'Veggie'),
+    (1, 'package_wine', 'a nice wine package for the drunken *hick*', 'Wine'),(1, 'Stockholm Veggie', 'Veggie weekend in Stockholm', 'Veggie'),
+    (2, 'Malmoe Wine', 'Seafood special in Malmoe', 'Wine'),(3, 'Gothenburg Gourmet', 'Fine dining in Gothenburg', 'Fine dining'),
+    (4, 'Oslo Explorer', 'City break in Oslo', 'Wine'),(5, 'Bergen Fjord', 'Fjord and food', 'Veggie'),
     (6, 'Trondheim Culture', 'Museums and meals', 'Fine dining'),(7, 'Copenhagen Classic', 'Canals and cuisine', 'Fine dining'),
-    (8, 'Aarhus Relax', 'Cozy stay in Aarhus', 'Veggie'), (9, 'Odense Family', 'Family friendly package', 'Fish'),
+    (8, 'Aarhus Relax', 'Cozy stay in Aarhus', 'Veggie'), (9, 'Odense Family', 'Family friendly package', 'Wine'),
     (10, 'Helsinki Winter', 'Northern lights and sauna', 'Fine dining'),(11, 'Espoo Escape', 'Weekend escape', 'Veggie'),
-    (12, 'Tampere Taste', 'Local flavors', 'Fish'),(13, 'Reykjavik Adventure', 'Icelandic nature', 'Veggie'),
-    (14, 'Akureyri Calm', 'Small town charm', 'Fish'),
+    (12, 'Tampere Taste', 'Local flavors', 'Wine'),(13, 'Reykjavik Adventure', 'Icelandic nature', 'Veggie'),
+    (14, 'Akureyri Calm', 'Small town charm', 'Wine'),
     (15, 'Berlin Nights', 'City nightlife', 'Fine dining'),
-    (16, 'Munich Beer', 'Oktoberfest style', 'Fish'),
+    (16, 'Munich Beer', 'Oktoberfest style', 'Wine'),
     (17, 'Hamburg Harbor', 'Harbor walks and food', 'Veggie'),
     (18, 'Amsterdam Canals', 'Bike and dine', 'Fine dining'),
-    (19, 'Rotterdam Modern', 'Architecture and meals', 'Fish'),
+    (19, 'Rotterdam Modern', 'Architecture and meals', 'Wine'),
     (20, 'Utrecht Quiet', 'Historic canals', 'Veggie'),
     (21, 'Paris Romance', 'Romantic dinners', 'Fine dining'),
     (22, 'Lyon Food', 'Gastronomy tour', 'Fine dining'),
-    (23, 'Nice Sun', 'Beach and seafood', 'Fish'),
+    (23, 'Nice Sun', 'Beach and seafood', 'Wine'),
     (24, 'Madrid Culture', 'Museums and tapas', 'Fine dining'),
-    (25, 'Barcelona Art', 'Gaudi and gastronomy', 'Fish'),
-    (26, 'Valencia Paella', 'Paella weekend', 'Fish'),
+    (25, 'Barcelona Art', 'Gaudi and gastronomy', 'Wine'),
+    (26, 'Valencia Paella', 'Paella weekend', 'Wine'),
     (27, 'Rome History', 'Ancient sites and food', 'Fine dining'),
     (28, 'Milan Fashion', 'Shopping and dining', 'Fine dining'),
     (29, 'Venice Romance', 'Canals and cuisine', 'Fine dining'),
     (30, 'Uppsala Study', 'University town break', 'Veggie'),
     (31, 'Vasteras Calm', 'Lake views', 'Veggie'),
-    (32, 'Linkoping Tech', 'Innovation and food', 'Fish'),
+    (32, 'Linkoping Tech', 'Innovation and food', 'Wine'),
     (33, 'Kristiansand Coast', 'Coastal escape', 'Veggie'),
-    (34, 'Tromso Lights', 'Northern lights package', 'Fish'),
+    (34, 'Tromso Lights', 'Northern lights package', 'Wine'),
     (35, 'Helsingor Castle', 'Castle and cuisine', 'Fine dining'),
     (36, 'Roskilde Festival', 'Music and meals', 'Veggie'),
-    (37, 'Oulu Winter', 'Snow and sauna', 'Fish'),
+    (37, 'Oulu Winter', 'Snow and sauna', 'Wine'),
     (38, 'Selfoss Nature', 'Icelandic countryside', 'Veggie'),
     (39, 'Frankfurt Business', 'Business friendly', 'Fine dining'),
     (40, 'Stuttgart Vine', 'Wine region', 'Fine dining'),
     (41, 'Eindhoven Tech', 'Design and dining', 'Veggie'),
     (42, 'Bordeaux Wine', 'Wine tasting', 'Fine dining'),
-    (43, 'Seville Flamenco', 'Culture and tapas', 'Fish'),
+    (43, 'Seville Flamenco', 'Culture and tapas', 'Wine'),
     (44, 'Bilbao Art', 'Guggenheim visit', 'Fine dining'),
-    (45, 'Naples Coast', 'Coastline and pizza', 'Fish'),
+    (45, 'Naples Coast', 'Coastline and pizza', 'Wine'),
     (46, 'Turin Truffle', 'Gourmet truffle tour', 'Fine dining'),
-    (47, 'Kalmar Island', 'Island hopping', 'Veggie'),(48, 'Halmstad Surf', 'Beach and surf', 'Fish'),
+    (47, 'Kalmar Island', 'Island hopping', 'Veggie'),(48, 'Halmstad Surf', 'Beach and surf', 'Wine'),
     (49, 'Fredrikstad Fort', 'Historic fort visit', 'Veggie'),(50, 'Hillerod Palace', 'Palace and gardens', 'Fine dining');
     ");
 
