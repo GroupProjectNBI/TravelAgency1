@@ -23,7 +23,7 @@ class Data
     email VARCHAR(255) NOT NULL UNIQUE,
     first_name VARCHAR(50),
     last_name VARCHAR(100),
-    role_id INT NOT NULL,
+    role_id INT NOT NULL DEFAULT 2,
     date_of_birth DATE,
     password VARCHAR(255),
     FOREIGN KEY (role_id) REFERENCES roles (id)

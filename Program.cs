@@ -55,6 +55,12 @@ app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRol
 
 // --- Admin & System ---
 app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
+// endpoints for locations
+app.MapGet("/locations", Locations.Get_All);
+app.MapGet("/locations/search", Locations_Search_Handler);
+app.MapPost("/locations", Locations_Post_Handler);
+app.MapGet("/locations/{id}", Locations_Get_Handler);
+app.MapDelete("/locations/{id}", Locations_Delete_Handler);
 
 app.MapGet("/admin/get_users", Admin.GetAllUsers)
    .RequireAuthorization(p => p.RequireRole("admin"));
