@@ -15,24 +15,36 @@ static class Login
 
     Post(Post_Args credentials, Config config, HttpContext ctx)
     {
-        bool result = false;
-        string query = "SELECT id FROM users WHERE email = @email AND password = @password";
+        string query = "SELECT users.id, roles.role FROM users INNER JOIN roles ON users.role_id = roles.id WHERE users.email = @email AND users.password = @password";
+
         var parameters = new MySqlParameter[]
         {
             new("@email", credentials.Email),
             new("@password", credentials.Password),
         };
 
-        object query_result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
-        if (query_result is int id)
+        // using är viktigt här för att stänga kopplingen snyggt
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+
+        // Om vi hittar en rad (ReadAsync returnerar true)
+        if (await reader.ReadAsync())
         {
+
+            int id = reader.GetInt32("id");
+            string role = reader.GetString("role");
+            Console.WriteLine(id + "  " + role);
             if (ctx.Session.IsAvailable)
             {
                 ctx.Session.SetInt32("user_id", id);
-                result = true;
+                ctx.Session.SetString("role", role);
+
+                // VIKTIGT: Returnera true här eftersom vi lyckades!
+                return true;
             }
         }
-        return result;
+
+        // Om vi kommer hit var lösenordet fel eller användaren fanns inte
+        return false;
 
     }
 }
