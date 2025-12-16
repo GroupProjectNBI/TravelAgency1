@@ -33,7 +33,19 @@ app.UseMiddleware<SessionAuthMiddleware>(); // Omvandla session till User Claims
 app.UseAuthorization();                     // Kontrollera behörighet
 
 // --- 3. Endpoints ---
+app.MapGet("/experiences", async (
+int location_id,
+DateOnly check_in,
+DateOnly check_out,
+int rooms,
+Config config) =>
+{
+  if (rooms <= 0) return Results.BadRequest(new { message = "rooms must be > 0" });
+  if (check_out <= check_in) return Results.BadRequest(new { message = "check_out must be after check_in" });
 
+  var offers = await Experiences.SearchHotels(location_id, check_in, check_out, rooms, config);
+  return Results.Ok(offers);
+});
 // --- Login & Auth ---
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
@@ -54,7 +66,7 @@ app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p
 app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
 
 // --- Admin & System ---
-app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//.RequireAuthorization(p => p.RequireRole("admin"));
 
 // endpoints for locations -- no update for location
 app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));

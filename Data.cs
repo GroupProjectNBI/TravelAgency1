@@ -59,6 +59,7 @@ class Data
     address VARCHAR(255) NOT NULL,
     price_class INT NOT NULL,
     has_breakfast BOOLEAN NOT NULL DEFAULT FALSE,
+    max_rooms INT NOT NULL DEFAULT 10,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
