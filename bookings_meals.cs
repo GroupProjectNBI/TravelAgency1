@@ -17,7 +17,7 @@ class bookings_meals
         var parameters = new MySqlParameter[]
         {
         new("@bookings_id", data.bookings_id),
-        new("@date", data.date),
+        new("@date", data.date?.ToString("yyyy-MM-dd")),
         new("@meal_type", data.meal_type),
         };
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
@@ -80,7 +80,7 @@ class bookings_meals
 
         var bok_mealExists = await MySqlHelper.ExecuteScalarAsync(config.db,
           "SELECT COUNT(1) FROM booking_meals WHERE id = @id",
-          new MySqlParameter[] { new("@id", id) });
+          [new("@id", id)]);
 
         if (Convert.ToInt32(bok_mealExists) == 0)
             return Results.BadRequest(new { message = "bookings_meals does not exist" });
@@ -96,7 +96,7 @@ class bookings_meals
 
         var bookingsExist = await MySqlHelper.ExecuteScalarAsync(config.db,
             "SELECT COUNT(1) FROM bookings WHERE id = @bookings_id",
-            new MySqlParameter[] { new("@bookings_id", data.bookings_id) });
+            [new("@bookings_id", data.bookings_id)]);
 
         if (Convert.ToInt32(bookingsExist) == 0)
             return Results.BadRequest(new { message = "bookings_id does not exist" });
@@ -119,7 +119,7 @@ class bookings_meals
   {
             new("@id", id),
             new("@bookings_id", data.bookings_id),
-                        new("@date", data.date),
+            new("@date", data.date.ToString("yyyy-MM-dd")),
             new("@meal_type", data.meal_type)
   };
 
