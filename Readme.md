@@ -146,12 +146,12 @@ This API uses Session-based authentication.
 - Access: The Middleware (SessionAuthMiddleware) reads the cookie on every request and grants access based on your role in the database.
 
 ### Roller
-Admin - Full tillgång (Reset DB, hantera användare).
+Admin - Full Access (Reset DB, handle users).
 
-Client - Boka resor, se historik.
+Client - Book trabels, Watch History.
 
-Guest - Söka resor, se hotell.
-### Detta API använder Sessions-baserad autentisering.
+Guest - Search travels, See Hotels.
+### This API uses Session-based authentication.
 
 **Log in**: Send a POST to /login with email and password.
 
@@ -185,13 +185,7 @@ Guest - Söka resor, se hotell.
 
 - **Session fungerar inte**:Session not working: If using Thunder Client/Postman, make sure Cookies are enabled in the settings.
 
-
-## 📂 Projektstruktur
-
-
-
-## Databasmodell (ER-diagram)
-
+## Database Model (ER Diagram)
 ```mermaid
 erDiagram
     users {
