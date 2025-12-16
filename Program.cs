@@ -100,6 +100,8 @@ app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRol
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/packages/check_availability", Packages_CheckAvailability_Handler); //new
+
 
 // --- Package Meals ---
 app.MapPost("/packages_meals", package_meals.Post).RequireAuthorization(p => p.RequireRole("admin"));
