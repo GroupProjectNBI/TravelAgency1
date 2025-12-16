@@ -11,9 +11,8 @@ static class Login
     }
 
     public record Post_Args(string Email, string Password);
-    public static async Task<bool>
 
-    Post(Post_Args credentials, Config config, HttpContext ctx)
+    public static async Task<bool> Post(Post_Args credentials, Config config, HttpContext ctx)
     {
         string query = "SELECT users.id, roles.role FROM users INNER JOIN roles ON users.role_id = roles.id WHERE users.email = @email AND users.password = @password";
 
@@ -23,28 +22,26 @@ static class Login
             new("@password", credentials.Password),
         };
 
-        // using är viktigt här för att stänga kopplingen snyggt
+        // using is important here to cleanly close the connection
         using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
 
-        // Om vi hittar en rad (ReadAsync returnerar true)
+        // If we find a row (ReadAsync returns true)
         if (await reader.ReadAsync())
         {
-
             int id = reader.GetInt32("id");
             string role = reader.GetString("role");
-            Console.WriteLine(id + "  " + role);
+
             if (ctx.Session.IsAvailable)
             {
                 ctx.Session.SetInt32("user_id", id);
                 ctx.Session.SetString("role", role);
 
-                // VIKTIGT: Returnera true här eftersom vi lyckades!
+                // IMPORTANT: Return true here since we succeeded!
                 return true;
             }
         }
 
-        // Om vi kommer hit var lösenordet fel eller användaren fanns inte
+        // If we get here, the password was wrong or the user did not exist
         return false;
-
     }
 }
