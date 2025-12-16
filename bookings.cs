@@ -51,10 +51,35 @@ public class Bookings
     return bookings;
   }
 
+  public static async Task<bool> IsPackageAvailable(
+int packageId,
+DateOnly checkIn,
+DateOnly checkOut,
+Config config)
+  {
+    var result = await MySqlHelper.ExecuteScalarAsync(config.db, "CALL sp_check_package_availability(@package_id, @check_in, @check_out);",
+    new[]
+    {
+    new MySqlParameter("@package_id", packageId),
+    new MySqlParameter("@check_in", checkIn.ToDateTime(TimeOnly.MinValue)),
+    new MySqlParameter("@check_out", checkOut.ToDateTime(TimeOnly.MinValue))
+
+    }
+  );
+    if (result == null || result == DBNull.Value)
+      return false;
+    return Convert.ToInt32(result) == 1;
+  }
+
   public record Post_Args(int user_id, int location_id, int hotel_id, int package_id, DateOnly check_in, DateOnly check_out, int guests, int rooms, string status, decimal total_price);
   public static async Task<IResult>
   Post(Post_Args bookings, Config config)
   {
+    bool isAvailable = await IsPackageAvailable(bookings.package_id, bookings.check_in, bookings.check_out, config);
+    if (!isAvailable)
+    {
+      return Results.BadRequest("Package isn't available for that date.");
+    }
     // more validation that i am able to handle at the moment. 
 
     try
@@ -91,9 +116,9 @@ public class Bookings
       var body = new { id = newId, message = "Created Successfully" };
       return Results.Json(body, statusCode: StatusCodes.Status201Created);
     }
-    catch (MySql.Data.MySqlClient.MySqlException mex)
+    catch (MySqlException)
     {
-      Console.WriteLine($"error: {mex}");
+
       return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
   }

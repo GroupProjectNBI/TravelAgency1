@@ -54,7 +54,9 @@ app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p
 app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
 
 // --- Admin & System ---
-app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/admin/revenue/yearly", AdminRevenue_Yearly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/admin/revenue/monthly", AdminRevenue_Monthly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 
 // endpoints for locations -- no update for location
 app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
@@ -100,6 +102,8 @@ app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRol
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/packages/check_availability", Packages_CheckAvailability_Handler); //new
+
 
 // --- Package Meals ---
 app.MapPost("/packages_meals", package_meals.Post).RequireAuthorization(p => p.RequireRole("admin"));
@@ -235,3 +239,72 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
+static async Task<IResult> Packages_CheckAvailability_Handler(Package.CheckAvailability_Args args, Config config)
+{
+  if (!DateOnly.TryParse(args.check_in, out var checkInDate))
+    return Results.BadRequest(new { message = "Invalid check_in date format" });
+
+  if (!DateOnly.TryParse(args.check_out, out var checkOutDate))
+    return Results.BadRequest(new { message = "Invalid check_out date format" });
+
+  return await Package.CheckAvailability(args.package_id, checkInDate, checkOutDate, config);
+}
+static async Task<IResult> AdminRevenue_Yearly_Handler(Config config)
+{
+  try
+  {
+    return await AdminRevenue.GetRevenueYearly(config);
+  }
+  catch
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
+static async Task<IResult> AdminRevenue_Monthly_Handler(Config config)
+{
+  try
+  {
+    return await AdminRevenue.GetRevenueMonthly(config);
+  }
+  catch
+  {
+    return Results.StatusCode(StatusCodes.Status500InternalServerError);
+  }
+}
+
+
+
+
+//
+// DELIMITER $$
+//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+//   BEGIN
+//     START TRANSACTION;
+
+// INSERT INTO password_request (`user`)
+//     SELECT u.id
+//     FROM users u
+//     WHERE u.email = p_email;
+
+// IF ROW_COUNT() = 0 THEN
+//   ROLLBACK;
+// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+// END IF;
+
+// COMMIT;
+// END$$
+//   DELIMITER ;
+
+
+// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+//, NOW() + INTERVAL 1 DAY
+
+
+//List<Users> UsersGet()
+//{
+// return Users;
+//}
+//Users? UsersGetById(int Id)
+// Test
