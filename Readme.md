@@ -18,7 +18,7 @@ To run this project, you need the following installed on your computer:
     * .NET 9.0 (or newer).
     * [Download here](https://dotnet.microsoft.com/download)
 2.  **MySQL Server**
-    * Du behöver en lokal eller extern MySQL-databas som körs.
+    * You need a local or external MySQL database running.
     * [Download here](https://dev.mysql.com/downloads/mysql/)
 3.  **Code Editor**
     * Visual Studio 2022, Visual Studio Code, or Rider.
@@ -42,14 +42,14 @@ Open your MySQL client (e.g., MySQL Workbench or terminal) and run the following
 ```sql
 CREATE DATABASE travel_agency_db;
 
--- Byt ut mot ditt önskade användarnamn/lösenord
+-- Replace with your desired username/password
 CREATE USER 'travel_user'@'localhost' IDENTIFIED BY 'travel_password';
 GRANT ALL PRIVILEGES ON travel_agency_db.* TO 'travel_user'@'localhost';
 FLUSH PRIVILEGES;
 
 USE travel_agency_db;
 
--- 1. Skapa tabeller för auth
+-- 1. Create necessary auth tables
 CREATE TABLE roles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   role_name VARCHAR(50) NOT NULL
@@ -63,12 +63,12 @@ CREATE TABLE users (
   FOREIGN KEY (role_id) REFERENCES roles(id)
 );
 
--- 2. Lägg till roller
+-- 2. Add roles
 INSERT INTO roles (role_name) VALUES ('Admin'), ('Client');
 
--- 3. Skapa din första temporära Admin
--- (Lösenordet nedan måste matcha din hash-algoritm i koden.
--- Om du kör utan hashing i dev-mode, skriv lösenordet i klartext).
+-- 3. Create your first temporary Admin
+-- IMPORTANT: If you use BCrypt in the code, the password here must be hashed.
+-- The example below is 'adminpass' in plain text (if running in dev-mode without hashing).
 INSERT INTO users (email, password, role_id) 
 VALUES ('admin@travel.com', 'adminpass', 1);
 ```
