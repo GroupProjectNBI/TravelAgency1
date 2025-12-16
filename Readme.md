@@ -1,106 +1,316 @@
-# TravelAgency API
+# ✈️ TravelAgency API
+This is a backend project built with C# Minimal API and MySQL. The API manages bookings, hotels, rooms, travel packages, and users for a travel agency.
 
-Detta är ett backend-projekt byggt med **C# Minimal API** och **MySQL**. API:et hanterar bokningar, hotell, rum, paketresor och användare för en resebyrå.
+The project uses a custom authentication solution with Sessions and Middleware to handle roles (Admin, Client, etc.).
 
-Projektet använder en anpassad autentiseringslösning med Sessions och Middleware för att hantera roller (Admin, Client, etc.).
-
-## 📋 Krav (Requirements)
-
-För att kunna köra projektet behöver du ha följande installerat på din dator:
-
-1.  **C# / .NET SDK**
-    * .NET 9.0 (eller nyare).
-    * [Ladda ner här](https://dotnet.microsoft.com/download)
-2.  **MySQL Server**
-    * Du behöver en lokal eller extern MySQL-databas som körs.
-    * [Ladda ner MySQL Community Server](https://dev.mysql.com/downloads/mysql/)
-3.  **Kodeditor**
-    * Visual Studio 2022, Visual Studio Code, eller Rider.
-4.  **API Client** (För att testa endpoints)
-    * Thunder Client (VS Code extension), Postman.
+## 💻 Tech Stack
+* **Framework:** .NET 9 (Minimal API)
+* **Database:** MySQL 8.0+
+* **Auth:** Custom Session Middleware
+* **Testing:** Thunder Client / Postman
 
 ---
 
-## ⚙️ Installation & Konfiguration
+## 📋 Krav (Requirements)
 
-### 1. Klona eller ladda ner projektet
-Öppna en terminal i projektmappen.
+To run this project, you need the following installed on your computer:
+1.  **C# / .NET SDK**
+    * .NET 9.0 (or newer).
+    * [Download here](https://dotnet.microsoft.com/download)
+2.  **MySQL Server**
+    * Du behöver en lokal eller extern MySQL-databas som körs.
+    * [Download here](https://dev.mysql.com/downloads/mysql/)
+3.  **Code Editor**
+    * Visual Studio 2022, Visual Studio Code, or Rider.
+4.  **API Client** (För att testa endpoints)
+    * Thunder Client (VS Code extension) eller Postman.
+
+---
+
+## ⚙️ Installation & Configuration
+
+### 1. Clone the project
+Open a terminal in the folder where you want to save the project.
+
 ```bash
-git clone: git@github.com:GroupProjectNBI/TravelAgency1.git
+git clone git@github.com:GroupProjectNBI/TravelAgency1.git
 ```
-### 2. Sätt upp Databasen (MySQL)
-Öppna din MySQL-klient (t.ex. MySQL Workbench eller terminalen) och kör följande kommandon för att skapa databasen, användaren och tabellerna.
+### 2. Setup the Database (MySQL)
+Open your MySQL client (e.g., MySQL Workbench or terminal) and run the following commands to create the database, user, and tables.
 
-**Steg A: Skapa databas och användare**
+**Steg A: Create database and user**
 ```sql
-CREATE DATABASE <DIN_DATABAS>;
+CREATE DATABASE travel_agency_db;
 
-
-CREATE USER '<DITT_USER>'@'localhost' IDENTIFIED BY '<DITT_LÖSENORD>';
-
-GRANT ALL PRIVILEGES ON <DIN_DATABAS>.* TO '<DITT_USER>'@'localhost';
-
+-- Byt ut mot ditt önskade användarnamn/lösenord
+CREATE USER 'travel_user'@'localhost' IDENTIFIED BY 'travel_password';
+GRANT ALL PRIVILEGES ON travel_agency_db.* TO 'travel_user'@'localhost';
 FLUSH PRIVILEGES;
+
+USE travel_agency_db;
+
+-- 1. Skapa tabeller för auth
+CREATE TABLE roles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  role_name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL, 
+  role_id INT,
+  FOREIGN KEY (role_id) REFERENCES roles(id)
+);
+
+-- 2. Lägg till roller
+INSERT INTO roles (role_name) VALUES ('Admin'), ('Client');
+
+-- 3. Skapa din första temporära Admin
+-- (Lösenordet nedan måste matcha din hash-algoritm i koden.
+-- Om du kör utan hashing i dev-mode, skriv lösenordet i klartext).
+INSERT INTO users (email, password, role_id) 
+VALUES ('admin@travel.com', 'adminpass', 1);
 ```
 
 
-### 3. Uppdatera Konfigurationen
+### 3. Update Configuration
 
-Öppna filen `Program.cs` och leta upp raden där databaskopplingen (Connection String) sätts. Se till att `uid` (användarnamn) och `pwd` (lösenord) stämmer överens med din lokala MySQL-installation.
+Open **Program.cs** and find the line where the Connection String is set. Ensure uid (username) and pwd (password) match your local MySQL installation.
+
+C#
+
+/.
 
 ```csharp
 // I Program.cs
-Config config = new("server=127.0.0.1;uid=DITT_USER;pwd=DITT_LÖSENORD;database=<din_databas>");
+Config config = new("server=127.0.0.1;uid=travel_user;pwd=travel_password;database=travel_agency_db");
 ```
-### 4. Installera beroenden (Packages)
-För att projektet ska fungera måste du installera MySQL-kopplingen. Kör följande kommando i din terminal:
+### 4. Install Dependencies (Packages)
+For the project to work, you must install the MySQL connector. Run the following commands in your terminal:
 
 ```bash
-# Installera MySQL Data (Version 9.5.0)
+# Install MySQL Data (Version 9.5.0)
 dotnet add package MySql.Data --version 9.5.0
-
-# Återställ beroenden
+# Restore dependencies
 dotnet restore
 ```
 
-## 🚀 Hur man startar (Run)
+### 🚀 How to Run
 
 ```bash
 dotnet run
 ```
-Du bör se texten Now listening on: http://localhost:5xxx i terminalen.
+You should see the text Now listening on: http://localhost:5xxx in the terminal.
 
-## 🔐 Autentisering (Så funkar inloggning)
+### Initialize Travel Data (Seed)
+Now that the server is running, we need to populate the database with data (Hotels, Trips, etc.).
+
+1. Log in via /login with the temporary admin created in SQL (admin@travel.com).
+
+2. Run Reset: Call the endpoint DELETE /db (Requires Admin role).
+
+    This will delete everything and recreate the tables with ready-made test data.
+
+3. Done! The temporary admin user is now gone. Use one of the users below to continue testing:
+
+
+| Email | Password | Role |
+| :--- | :--- | :--- |
+| edvin@example.com | travelagency | Client |
+| admin1@example.com | adminpass | Admin |
+| admin2@example.com | adminpass | Admin |
+| admin3@example.com | adminpass | Admin |
+| admin4@example.com | adminpass | Admin |
+| admin5@example.com | adminpass | Admin |
+| user1@example.com | password | Client |
+| user2@example.com | password | Client |
+| user3@example.com | password | Client |
+| user4@example.com | password | Client |
+| user5@example.com | password | Client |
+| user6@example.com | password | Client |
+| user7@example.com | password | Client |
+| user8@example.com | password | Client |
+| user9@example.com | password | Client |
+
+(There are more users generated, but listing these is sufficient).
+
+
+### 🔐 Authentication & Endpoints
+This API uses Session-based authentication.
+
+- Log in: Send a POST to /login with email and password.
+
+- If successful: The server sets a Cookie in your browser/API client.
+
+- Access: The Middleware (SessionAuthMiddleware) reads the cookie on every request and grants access based on your role in the database.
+
+### Roller
+Admin - Full tillgång (Reset DB, hantera användare).
+
+Client - Boka resor, se historik.
+
+Guest - Söka resor, se hotell.
 ### Detta API använder Sessions-baserad autentisering.
 
-**Logga in**: Skicka en POST till /login med email och lösenord.
+**Log in**: Send a POST to /login with email and password.
 
-**Om lyckat**: Servern sätter en Cookie i din webbläsare/API-klient.
+**If successful**: The server sets a Cookie in your browser/API client
 
-**Access**: *Mellanlagret (SessionAuthMiddleware)* läser kakan vid varje anrop och ger dig behörighet baserat på din roll i databasen.
+**Access**: The Middleware (SessionAuthMiddleware) reads the cookie on every request and grants access based on your role in the database.
 
-### Roller:
+### Roles:
 
-*Admin* - Har full tillgång (kan resetta DB, hantera användare).
+*Admin* - Full access (can reset DB, manage users).
 
-*Client* - Kan boka resor och se sina bokningar.
+*Client* - Can book trips and view their bookings
 
-*Guest (Ej inloggad)* - Kan söka resor och se hotell.
+*Guest (Not logged in))* - Can search trips and view hotels.
 
 
-## 📡 Exempel på Endpoints
-| Metod  | Endpoint    | Beskrivning              | Behörighet |
+## 📡 Example Endpoints (some endpoints may be in a todo state)
+| Metod  | Endpoint    | Description              | Permission |
 | :----- | :---------- | :----------------------- | :--------- |
-| POST   | `/register` | Skapa ny användare       | Alla       |
-| POST   | `/login`    | Logga in användare       | Alla       |
-| GET    | `/locations`| Hämta alla destinationer | Alla       |
-| GET    | `/trips`    | Sök resor                | Alla       |
-| POST   | `/bookings` | Boka en resa             | Client     |
-| DELETE | `/db`       | Återställ databasen      | Admin      |
+| POST   | `/register` | Create new user          | All        |
+| POST   | `/login`    | Log in user              | All        |
+| GET    | `/locations`| Get all destinations     | All        |
+| GET    | `/trips`    | Search trips             | All        |
+| POST   | `/bookings` | Book a trip              | Client     |
+| DELETE | `/db`       | Reset database           |    Admin   |
 
-## 🛠 Felsökning
-- Error 403 Forbidden: Du är inloggad men har fel roll. (Kontrollera om rollen heter "admin" eller "Admin" i databasen - systemet är skiftlägeskänsligt).
+## 🛠 Troubleshooting
+- **Error 403 Forbidden**: You are logged in but have the wrong role. (Check if the role is named "admin" or "Admin" in the database - the system is case-sensitive).
 
-- Database Connection Error: Kontrollera att MySQL-servern är igång och att uppgifterna i Program.cs stämmer exakt med det du skapade i SQL.
+- **Database Connection Error**: Database Connection Error: Check that the MySQL server is running and that credentials in Program.cs match exactly what you created in SQL.
 
-- Session fungerar inte: Om du använder Thunder Client/Postman, se till att Cookies är aktiverat i inställningarna.
+- **Session fungerar inte**:Session not working: If using Thunder Client/Postman, make sure Cookies are enabled in the settings.
+
+
+## 📂 Projektstruktur
+
+
+
+## Databasmodell (ER-diagram)
+
+```mermaid
+erDiagram
+    users {
+        int id PK
+        string email
+        string first_name
+        string last_name
+        int role_id
+        date date_of_birth
+        string password
+    }
+
+    roles {
+        int id PK
+        string role
+    }
+
+    password_request {
+        int user_id PK
+        string temp_key
+        date expire_date
+    }
+
+    bookings {
+        int id PK
+        int user_id
+        int location_id
+        int hotel_id
+        int package_id
+        date check_in
+        date check_out
+        int guests
+        int rooms
+        string status
+        datetime created_at
+        decimal total_price
+    }
+
+    booking_meals {
+        int id PK
+        int bookings_id
+        date date
+        string meal_type
+    }
+
+    packages {
+        int id PK
+        int location_id
+        string name
+        string description
+        string package_type
+    }
+
+    packages_meals {
+        int id PK
+        int package_id
+        int restaurant_id
+        string day_kind
+        string meal_type
+    }
+
+    hotels {
+        int id PK
+        int location_id
+        string name
+        string address
+        string price_class
+        boolean has_breakfast
+    }
+
+    rooms {
+        int id PK
+        int hotel_id
+        string room_number
+        string name
+        int capacity
+        decimal price_per_night
+    }
+
+    locations {
+        int id PK
+        int countries_id
+        string city
+    }
+
+    countries {
+        int id PK
+        string name
+    }
+
+    restaurants {
+        int id PK
+        int location_id
+        string name
+        boolean is_veggie_friendly
+        boolean is_fine_dining
+        boolean is_wine_focused
+    }
+
+    roles ||--|{ users : "assigned to"
+    users ||--o| password_request : "requests"
+    users ||--|{ bookings : "makes"
+    
+    bookings ||--|{ booking_meals : "includes"
+    
+    locations ||--|{ bookings : "destination for"
+    hotels ||--|{ bookings : "booked in"
+    packages ||--|{ bookings : "associated with"
+
+    locations ||--|{ packages : "offers"
+    packages ||--|{ packages_meals : "defines"
+    
+    locations ||--|{ hotels : "contains"
+    hotels ||--|{ rooms : "has"
+
+    countries ||--|{ locations : "has"
+    locations ||--|{ restaurants : "contains"
+    restaurants ||--|{ packages_meals : "provides meals for"
+```
+
+
+
