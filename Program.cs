@@ -56,6 +56,13 @@ app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRol
 // --- Admin & System ---
 app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));
 
+// endpoints for locations -- no update for location
+app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/locations/search", Locations_Search_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/locations/{id}", Locations_Get_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/locations", Locations_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/locations/{id}", Locations_Delete_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+
 app.MapGet("/admin/get_users", Admin.GetAllUsers)
    .RequireAuthorization(p => p.RequireRole("admin"));
 
@@ -64,13 +71,6 @@ app.MapGet("/register", Users.GetAll).RequireAuthorization(p => p.RequireRole("a
 app.MapGet("/register/{Id}", Users.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPost("/register", Users_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/profile", Profile.Get).RequireAuthorization(); // Kräver inloggning --- bra att ha
-
-// --- Locations ---
-app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/locations/search", Locations_Search_Handler).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapPost("/location", Locations_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("location/{id}", Locations_Get_Handler).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapDelete("/location/{id}", Locations_Delete_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 
 // --- Hotels ---
 app.MapGet("/hotels", Hotels.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
