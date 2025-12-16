@@ -43,6 +43,49 @@ public class Admin
         }
 
     }
+    public record HotelOccupancyDto(int HotelId, string HotelName, int TotalRoomsBooked);
+
+    public static async Task<List<HotelOccupancyDto>> GetOccupancy(Config config)
+    {
+        List<HotelOccupancyDto> result = new();
+
+        string query = @"
+            SELECT 
+                h.id AS hotel_id,
+                h.name AS hotel_name,
+                SUM(b.rooms) AS total_rooms_booked
+            FROM hotels h
+            LEFT JOIN bookings b ON h.id = b.hotel_id
+            GROUP BY h.id, h.name;
+        ";
+
+        using var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query);
+
+        while (reader.Read())
+        {
+            result.Add(new(
+                reader.GetInt32("hotel_id"),
+                reader.GetString("hotel_name"),
+                reader.IsDBNull(reader.GetOrdinal("total_rooms_booked")) ? 0 : reader.GetInt32("total_rooms_booked")
+            ));
+        }
+
+        return result;
+    }
+
+
+    public static async Task<IResult> AdminOccupancy_Handler(Config config)
+    {
+        try
+        {
+            var data = await GetOccupancy(config);
+            return Results.Ok(data);
+        }
+        catch
+        {
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+    }
 
 
 }

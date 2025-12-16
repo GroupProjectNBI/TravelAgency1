@@ -57,6 +57,9 @@ app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRol
 app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/admin/revenue/yearly", AdminRevenue_Yearly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/admin/revenue/monthly", AdminRevenue_Monthly_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/admin/occupancy", Admin.AdminOccupancy_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+
+
 
 // endpoints for locations -- no update for location
 app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
