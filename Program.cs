@@ -86,6 +86,8 @@ app.MapGet("/packages/{Id}", Package.Get);
 app.MapPost("/packages", Package.Post);
 app.MapPut("/packages/{id}", Package.Put);
 app.MapDelete("/packages/{id}", Package.DeletePackage);
+app.MapPost("/packages/check_availability", Packages_CheckAvailability_Handler);
+
 
 // endpoints for package meals
 app.MapPost("/packages_meals", package_meals.Post);
@@ -105,6 +107,7 @@ app.MapGet("/bookings", Bookings_Get_All_Handler);
 app.MapPost("/bookings", Bookings.Post);
 app.MapDelete("/bookings/{id}", Bookings.Delete);
 app.MapPut("/bookings/{id}", Bookings.Put);
+
 
 
 
@@ -228,6 +231,19 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
+static async Task<IResult> Packages_CheckAvailability_Handler(Package.CheckAvailability_Args args, Config config)
+{
+  if (!DateOnly.TryParse(args.check_in, out var checkInDate))
+    return Results.BadRequest(new { message = "Invalid check_in date format" });
+
+  if (!DateOnly.TryParse(args.check_out, out var checkOutDate))
+    return Results.BadRequest(new { message = "Invalid check_out date format" });
+
+  return await Package.CheckAvailability(args.package_id, checkInDate, checkOutDate, config);
+}
+
+
 
 
 // DELIMITER $$

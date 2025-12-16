@@ -116,9 +116,9 @@ Config config)
       var body = new { id = newId, message = "Created Successfully" };
       return Results.Json(body, statusCode: StatusCodes.Status201Created);
     }
-    catch (MySql.Data.MySqlClient.MySqlException mex)
+    catch (MySqlException)
     {
-      Console.WriteLine($"error: {mex}");
+
       return Results.StatusCode(StatusCodes.Status500InternalServerError);
     }
   }
