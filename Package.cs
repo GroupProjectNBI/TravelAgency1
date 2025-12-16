@@ -11,8 +11,9 @@ class Package
     string Address,
     string City,
     string Country,
-    int Price,
-    bool HasBreakfast
+    string Price,
+    bool HasBreakfast,
+    int Capacity
 );
 
     private record PackageDto(
@@ -21,7 +22,9 @@ class Package
         string Description,
         string Type,
         string City,
-        string Country
+        string Country,
+        string IncludedMeals,
+        string IncludedRestaurants
     );
     public record fullTell(string name, string address, int price, bool has_breakfast);
     public record GetAll_Data(int id, int location_id, string name, string description, string package_type);
@@ -79,18 +82,14 @@ class Package
         // STEP 1: Get Hotel
         // ---------------------------------------------------------
         var hotelSql = @"
-         SELECT     h.id, 
-                    h.name, 
-                    h.address, 
-                    h.price_class, 
-                    h.has_breakfast,
-                    l.city,
-                    c.name as country 
- 
+        SELECT 
+            h.id, h.name, h.address, h.price_class, h.has_breakfast, h.capacity, h.max_cap,
+            l.city,
+            c.name as country
         FROM hotels h
         JOIN locations l ON h.location_id = l.id
         JOIN countries c ON l.countries_id = c.id
-        WHERE h.id = @hotelid AND l.city = (select city from locations where id = @locationid)";
+        WHERE h.id = @hotelid AND l.city = (SELECT city FROM locations WHERE id = @locationid)";
 
         var hotelParams = new MySqlParameter[]
         {
@@ -109,8 +108,10 @@ class Package
                 Address: reader.GetString("address"),
                 City: reader.GetString("city"),
                 Country: reader.GetString("country"),
-                Price: reader.GetInt32("price_class"),
-                HasBreakfast: reader.GetBoolean("has_breakfast")
+                Price: $"${reader.GetInt32("price_class")}",
+                HasBreakfast: reader.GetBoolean("has_breakfast"),
+                // Hantera att Capacity kan vara NULL i databasen
+                Capacity: reader.IsDBNull(reader.GetOrdinal("capacity")) ? 0 : reader.GetInt32("capacity")
                 ));
             }
         }
@@ -119,16 +120,21 @@ class Package
         // STEP 2: Get Package
         // ---------------------------------------------------------
         var packageSql = @"
-        SELECT p.id, 
-        p.name, 
-        p.description, 
-        p.package_type,
-        l.city,
-        c.name as country
+       SELECT 
+            p.id, p.name, p.description, p.package_type,
+            l.city,
+            c.name as country,
+            -- Slå ihop alla måltider till en sträng (t.ex 'Breakfast, Dinner')
+            GROUP_CONCAT(DISTINCT pm.meal_type SEPARATOR ', ') as meals,
+            -- Slå ihop alla restaurangnamn till en sträng
+            GROUP_CONCAT(DISTINCT r.name SEPARATOR ', ') as restaurants
         FROM packages p
         JOIN locations l ON p.location_id = l.id
         JOIN countries c ON l.countries_id = c.id
-        WHERE p.id = @packageid AND l.city = (select city from locations where id = @locationid)";
+        LEFT JOIN packages_meals pm ON p.id = pm.package_id
+        LEFT JOIN restaurants r ON pm.restaurant_id = r.id
+        WHERE p.id = @packageid AND l.city = (SELECT city FROM locations WHERE id = @locationid)
+        GROUP BY p.id";
 
         var packageParams = new MySqlParameter[]
         {
@@ -147,7 +153,10 @@ class Package
                 Description: reader.GetString("description"),
                 Type: reader.GetString("package_type"),
                 City: reader.GetString("city"),
-                Country: reader.GetString("country")
+                Country: reader.GetString("country"),
+                // Kolla om det är null (dvs inga måltider i paketet)
+                IncludedMeals: reader.IsDBNull(reader.GetOrdinal("meals")) ? "None" : reader.GetString("meals"),
+                IncludedRestaurants: reader.IsDBNull(reader.GetOrdinal("restaurants")) ? "None" : reader.GetString("restaurants")
                 ));
             }
         }
