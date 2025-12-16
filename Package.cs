@@ -168,6 +168,37 @@ class Package
 
         await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
     }
+    public record CheckAvailability_Args(int package_id, string check_in, string check_out);
+
+    public static async Task<bool> IsPackageAvailable(int packageId, DateOnly checkIn, DateOnly checkOut, Config config)
+    {
+        var result = await MySqlHelper.ExecuteScalarAsync(config.db,
+            "CALL sp_check_package_availability(@package_id, @check_in, @check_out);",
+            new[]
+            {
+                new MySqlParameter("@package_id", packageId),
+                new MySqlParameter("@check_in", checkIn.ToDateTime(TimeOnly.MinValue)),
+                new MySqlParameter("@check_out", checkOut.ToDateTime(TimeOnly.MinValue))
+            });
+
+        if (result == null || result == DBNull.Value)
+            return false;
+
+        return Convert.ToInt32(result) == 1;
+    }
+
+    public static async Task<IResult> CheckAvailability(int package_id, DateOnly check_in, DateOnly check_out, Config config)
+    {
+        bool available = await IsPackageAvailable(package_id, check_in, check_out, config);
+        return Results.Ok(new
+        {
+            package_id,
+            check_in,
+            check_out,
+            available
+        });
+    }
+
 }
 
 

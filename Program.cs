@@ -235,3 +235,48 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
+static async Task<IResult> Packages_CheckAvailability_Handler(Package.CheckAvailability_Args args, Config config)
+{
+  if (!DateOnly.TryParse(args.check_in, out var checkInDate))
+    return Results.BadRequest(new { message = "Invalid check_in date format" });
+
+  if (!DateOnly.TryParse(args.check_out, out var checkOutDate))
+    return Results.BadRequest(new { message = "Invalid check_out date format" });
+
+  return await Package.CheckAvailability(args.package_id, checkInDate, checkOutDate, config);
+}
+
+
+
+//
+// DELIMITER $$
+//   CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+//   BEGIN
+//     START TRANSACTION;
+
+// INSERT INTO password_request (`user`)
+//     SELECT u.id
+//     FROM users u
+//     WHERE u.email = p_email;
+
+// IF ROW_COUNT() = 0 THEN
+//   ROLLBACK;
+// SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No user with that email';
+// END IF;
+
+// COMMIT;
+// END$$
+//   DELIMITER ;
+
+
+// await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
+//, NOW() + INTERVAL 1 DAY
+
+
+//List<Users> UsersGet()
+//{
+// return Users;
+//}
+//Users? UsersGetById(int Id)
+// Test

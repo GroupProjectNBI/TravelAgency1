@@ -129,8 +129,38 @@ class Data
   meal_type ENUM ('Breakfast', 'Lunch', 'Dinner'),
   FOREIGN KEY (bookings_id) REFERENCES bookings(id)
   );
-
   """;
+
+    string spSql = @"
+DROP PROCEDURE IF EXISTS sp_check_package_availability;
+CREATE PROCEDURE sp_check_package_availability (
+    IN p_package_id INT,
+    IN p_check_in DATE,
+    IN p_check_out DATE
+)
+BEGIN
+    DECLARE booking_count INT;
+
+    SELECT COUNT(*)
+    INTO booking_count
+    FROM bookings
+    WHERE package_id = p_package_id
+      AND status IN ('confirmed', 'paid')
+      AND check_in < p_check_out
+      AND check_out > p_check_in;
+
+    IF booking_count = 0 THEN
+        SELECT 1 AS is_available;
+    ELSE
+        SELECT 0 AS is_available;
+    END IF;
+END;
+";
+
+
+
+
+
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
@@ -143,9 +173,8 @@ class Data
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS users");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS countries");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS roles");
-
     await MySqlHelper.ExecuteNonQueryAsync(config.db, users_create);
-
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, spSql);
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "INSERT INTO roles(role) VALUES ('admin'),('client');");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, @"
     INSERT INTO users (email, first_name, last_name, role_id, date_of_birth, password) VALUES
