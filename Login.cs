@@ -16,23 +16,42 @@ static class Login
     Post(Post_Args credentials, Config config, HttpContext ctx)
     {
         bool result = false;
-        string query = "SELECT id FROM users WHERE email = @email AND password = @password";
+        string query = "SELECT id, password, role FROM users WHERE email = @email";
         var parameters = new MySqlParameter[]
         {
             new("@email", credentials.Email),
-            new("@password", credentials.Password),
+
         };
 
-        object query_result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
-        if (query_result is int id)
+        var reader = await MySqlHelper.ExecuteReaderAsync(config.db, query, parameters);
+
+        if (reader.Read())
         {
-            if (ctx.Session.IsAvailable)
+            int userId = reader.GetInt32("id");
+            string passwordFromDb = reader.GetString("password");
+            string role = reader.GetString("role");
+
+            if (credentials.Password == passwordFromDb)
             {
-                ctx.Session.SetInt32("user_id", id);
-                result = true;
+
+                if (ctx.Session.IsAvailable)
+                {
+                    ctx.Session.SetInt32("user_id", userId);
+                    result = true;
+
+                }
+            }
+            else
+            {
+
+                result = false;
+
             }
         }
+
         return result;
 
     }
 }
+
+
