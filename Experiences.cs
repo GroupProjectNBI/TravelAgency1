@@ -1,6 +1,10 @@
 namespace TravelAgency;
 
 using MySql.Data.MySqlClient;
+using Microsoft.AspNetCore.Http;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 class Experiences
 {
@@ -44,11 +48,12 @@ class Experiences
     static async Task<List<(int id, string name)>> GetRestaurantsByPackage(
         int locationId, string package, int take, Config config)
     {
+        package = package.Trim().ToLowerInvariant();
         string where = package switch
         {
-            "Veggie" => "is_veggie_friendly = 1",
-            "Fine dining" => "is_fine_dining =1",
-            "Wine" => "is_wine_focused = 1",
+            "veggie" => "is_veggie_friendly = 1",
+            "fine dining" => "is_fine_dining = 1",
+            "wine" => "is_wine_focused = 1",
             _ => "1=0" //unknown package => no matches
         };
 
@@ -257,14 +262,16 @@ class Experiences
                 var breakFastStart = checkIn.AddDays(1);
                 var breakFastEnd = checkOut.AddDays(-1);
 
-                for (var d = breakFastStart; d <= breakFastEnd; d = d.AddDays(1))
+                if (breakFastStart <= breakFastEnd)
                 {
-                    if (hasBreakFast)
-                        meals.Add(new MealPlanItem(d, "Breakfast", null, "Hotel Breakfast"));
-                    else
-                        meals.Add(new MealPlanItem(d, "Breakfast", rest.id, rest.name));
+                    for (var d = breakFastStart; d <= breakFastEnd; d = d.AddDays(1))
+                    {
+                        if (hasBreakFast)
+                            meals.Add(new MealPlanItem(d, "Breakfast", null, "Hotel Breakfast"));
+                        else
+                            meals.Add(new MealPlanItem(d, "Breakfast", rest.id, rest.name));
+                    }
                 }
-
 
                 decimal estimated = minPrice * roomsWanted * nights;
 
@@ -286,4 +293,114 @@ class Experiences
         }
         return offers;
     }
+
+    public record BookFromExperienceArgs(
+        int user_id,
+        int location_id,
+        int hotel_id,
+        int restaurant_id,
+        string package, // "veggie" "fine dining" "Wine"
+        DateOnly check_in,
+        DateOnly check_out,
+        int guests,
+        int rooms,
+        int max_price_class
+        );
+
+    static async Task<int?> ResolvePackageId(int locationId, string package, Config config)
+    {
+        package = package.Trim().ToLowerInvariant();
+        package = package switch
+        {
+            "wine" => "Wine",
+            "veggie" => "Veggie",
+            "fine dining" => "Fine dining",
+            _ => package
+        };
+
+        string q = """
+        SELECT id
+        FROM packages
+        WHERE location_id = @loc
+        AND package_type = @type
+        LIMIT 1;
+        """;
+
+        var obj = await MySqlHelper.ExecuteScalarAsync(config.db, q, new MySqlParameter[]
+        {
+            new("@loc", locationId),
+            new("@type", package)
+        });
+
+        if (obj is null || obj == DBNull.Value) return null;
+        return Convert.ToInt32(obj);
+    }
+
+    public static async Task<IResult> BookFromExperienceOffer(BookFromExperienceArgs req, Config config)
+    {
+        //Re-check availability
+        var offers = await SearchOffers(
+            locationId: req.location_id,
+            checkIn: req.check_in,
+            checkOut: req.check_out,
+            roomsWanted: req.rooms,
+            guests: req.guests,
+            maxPriceClass: req.max_price_class,
+            package: req.package,
+            limit: 500,
+            config: config
+        );
+
+        //match on chosen hotel + restaurant
+        var picked = offers.FirstOrDefault(o =>
+        o.hotel_id == req.hotel_id &&
+        o.meals.Any(m => m.restaurant_id == req.restaurant_id));
+
+        if (picked is null)
+            return Results.BadRequest(new { message = "Selected experience is no longer available." });
+
+        //package_id is needed for the booking
+        var packageId = await ResolvePackageId(req.location_id, req.package, config);
+        if (packageId is null)
+            return Results.BadRequest(new { message = "No package found for that category in this location" });
+
+        var bookingResult = await Bookings.Post(new Bookings.Post_Args(
+            user_id: req.user_id,
+            location_id: req.location_id,
+            hotel_id: req.hotel_id,
+            package_id: packageId.Value,
+            check_in: req.check_in,
+            check_out: req.check_out,
+            guests: req.guests,
+            rooms: req.rooms,
+            status: "pending",
+            total_price: picked.estimated_price
+        ), config);
+
+        //get bookingId so we can create booking_meals
+        //for now the easiest way by just getting the latest created booking in demo purpose
+        //in the future for more people to be able to book at the same time update Bookings.Post so we can get an id in return and read it directly
+        var idObj = await MySqlHelper.ExecuteScalarAsync(config.db, "SELECT LAST_INSERT_ID();");
+        int bookingId = Convert.ToInt32(idObj);
+
+        //create booking_meals
+
+        foreach (var m in picked.meals)
+        {
+            await bookings_meals.Post(
+            new bookings_meals.Post_data(bookingId, m.date, m.meal_type),
+            config
+            );
+        }
+
+        return Results.Created($"/bookings/{bookingId}", new
+        {
+            id = bookingId,
+            total_price = picked.estimated_price,
+            message = "Booking created"
+        });
+    }
+
+
+
 }

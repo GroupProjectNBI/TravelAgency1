@@ -2,6 +2,7 @@ global using MySql.Data.MySqlClient;
 using TravelAgency;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using MySqlX.XDevAPI.Common;
 
 // --- 1. Konfiguration och Services ---
 var builder = WebApplication.CreateBuilder(args);
@@ -38,14 +39,25 @@ int location_id,
 DateOnly check_in,
 DateOnly check_out,
 int rooms,
+int guests,
+int max_price_class,
+string package,  // Veggie | Fine dining | Wine
+int limit,
 Config config) =>
 {
   if (rooms <= 0) return Results.BadRequest(new { message = "rooms must be > 0" });
+  if (guests <= 0) return Results.BadRequest(new { message = "guests must be > 0" });
   if (check_out <= check_in) return Results.BadRequest(new { message = "check_out must be after check_in" });
+  if (max_price_class <= 0) return Results.BadRequest(new { message = "max_price_class must be > 0" });
 
-  var offers = await Experiences.SearchHotels(location_id, check_in, check_out, rooms, config);
+  package = package.Trim();
+
+  var offers = await Experiences.SearchOffers(location_id, check_in, check_out, rooms, guests, max_price_class, package, limit, config);
   return Results.Ok(offers);
 });
+app.MapPost("/bookings/from-offer", Experiences_BookFromExperienceOffer_Handler);
+
+
 // --- Login & Auth ---
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
 {
@@ -247,3 +259,11 @@ static async Task<IResult> Bookings_Get_All_Handler(Config config)
     return Results.StatusCode(StatusCodes.Status500InternalServerError);
   }
 }
+
+static async Task<IResult> Experiences_BookFromExperienceOffer_Handler(
+  Experiences.BookFromExperienceArgs req, Config config)
+{
+  return await Experiences.BookFromExperienceOffer(req, config);
+}
+
+
