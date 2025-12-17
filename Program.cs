@@ -71,7 +71,7 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
   }
 
   return Results.Ok(new { message = "Login successful" });
-}).RequireAuthorization(p => p.RequireRole("admin"));
+});
 
 app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
@@ -121,6 +121,7 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete).RequireAuthorization(p =>
 // --- Packages ---
 app.MapGet("/packages", Package.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/packages_details/{locationid}/{packageid}/{hotelid}", Package.GetDetails);
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
