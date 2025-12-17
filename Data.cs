@@ -57,6 +57,8 @@ class Data
     location_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     price_class INT NOT NULL,
     has_breakfast BOOLEAN NOT NULL DEFAULT FALSE,
     max_rooms INT NOT NULL DEFAULT 10,
@@ -64,14 +66,14 @@ class Data
   );
 
   CREATE TABLE rooms (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  hotel_id INT NOT NULL,
-  room_number INT NOT NULL,
-  name ENUM ('Single', 'Double', 'Suite') NOT NULL,
-  capacity INT NOT NULL,
-  price_per_night DECIMAL(10,2) NOT NULL,
-  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
-  FOREIGN KEY (hotel_id) REFERENCES hotels(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hotel_id INT NOT NULL,
+    room_number INT NOT NULL,
+    name ENUM ('Single', 'Double', 'Suite') NOT NULL,
+    capacity INT NOT NULL,
+    price_per_night DECIMAL(10,2) NOT NULL,
+    UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
+    FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
   CREATE TABLE restaurants (
@@ -80,6 +82,8 @@ class Data
     name VARCHAR(100),
     is_veggie_friendly BOOLEAN NOT NULL DEFAULT FALSE,
     is_fine_dining BOOLEAN NOT NULL DEFAULT FALSE,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     is_wine_focused BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
@@ -114,8 +118,8 @@ class Data
     check_out DATE NOT NULL,
     guests INT NOT NULL,
     rooms INT NOT NULL,
-    status ENUM('pending','confirmed','cancelled'),
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending','confirmed','cancelled') DEFAULT 'pending',
+    created_at DATE NOT NULL DEFAULT (CURRENT_DATE),
     total_price DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (location_id) REFERENCES locations(id),
@@ -131,7 +135,52 @@ class Data
   FOREIGN KEY (bookings_id) REFERENCES bookings(id)
   );
 
+
   """;
+    /*
+      DELIMITER //
+
+      DROP PROCEDURE IF EXISTS AddRoom; 
+
+      CREATE PROCEDURE AddRoom(
+        IN p_hotel_id INT,
+        IN p_room_number INT,  
+        IN p_name VARCHAR(50), 
+        IN p_capacity INT,
+        IN p_price DECIMAL(10,2)
+      )
+      BEGIN
+        DECLARE v_current_total_capacity INT DEFAULT 0;
+        DECLARE v_max_cap INT DEFAULT 0;
+        DECLARE v_new_total_capacity INT;
+        DECLARE v_next_room_number INT; 
+
+        SELECT max_cap INTO v_max_cap 
+        FROM hotels WHERE id = p_hotel_id;
+
+        SELECT IFNULL(SUM(capacity), 0) INTO v_current_total_capacity 
+        FROM rooms WHERE hotel_id = p_hotel_id;
+
+        SELECT IFNULL(MAX(room_number), 99) + 1 INTO v_next_room_number
+        FROM rooms WHERE hotel_id = p_hotel_id;
+
+        SET v_new_total_capacity = v_current_total_capacity + p_capacity;
+
+        IF v_max_cap IS NOT NULL AND v_new_total_capacity > v_max_cap THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Capacity limit exceeded: Cannot add room.';
+        ELSE
+            INSERT INTO rooms (hotel_id, room_number, name, capacity, price_per_night)
+            VALUES (p_hotel_id, v_next_room_number, p_name, p_capacity, p_price);
+
+            UPDATE hotels SET capacity = v_new_total_capacity WHERE id = p_hotel_id;
+
+            SELECT v_next_room_number as NewRoomNumber;
+        END IF;
+      END //
+
+      DELIMITER ;*/
+
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
