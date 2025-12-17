@@ -78,7 +78,7 @@ class Hotels
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
-    // Hämta ID för den nya raden
+    // get id for the new row
     string idQuery = "SELECT last_insert_id()";
     var idObj = await MySqlHelper.ExecuteScalarAsync(config.db, idQuery);
 
