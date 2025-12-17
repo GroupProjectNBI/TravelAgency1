@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 
 public class Admin
 {
-    // Exempel på enkel DTO
+    // Example simple DTO
     public record UserDto(string Email, string FirstName);
-    // Rätt metoddeklaration och HttpContext-typ
+    // correct method declaration and HttpContext-type
     public static async Task<IResult>
     GetAllUsers(Config config, HttpContext ctx)
     {
@@ -28,7 +28,7 @@ public class Admin
 
             while (await reader.ReadAsync())
             {
-                // Hantera NULL-värden säkert
+                // Handle NULL-references in a safe way
                 var email = reader.IsDBNull(0) ? string.Empty : reader.GetString(0);
                 var firstname = reader.IsDBNull(1) ? string.Empty : reader.GetString(1);
 

@@ -11,7 +11,7 @@ The project uses a custom authentication solution with Sessions and Middleware t
 
 ---
 
-## 📋 Krav (Requirements)
+## 📋 Requirements
 
 To run this project, you need the following installed on your computer:
 1.  **C# / .NET SDK**
@@ -22,8 +22,8 @@ To run this project, you need the following installed on your computer:
     * [Download here](https://dev.mysql.com/downloads/mysql/)
 3.  **Code Editor**
     * Visual Studio 2022, Visual Studio Code, or Rider.
-4.  **API Client** (För att testa endpoints)
-    * Thunder Client (VS Code extension) eller Postman.
+4.  **API Client** (to test endpoints)
+    * Thunder Client (VS Code extension) or Postman.
 
 ---
 
@@ -38,7 +38,7 @@ git clone git@github.com:GroupProjectNBI/TravelAgency1.git
 ### 2. Setup the Database (MySQL)
 Open your MySQL client (e.g., MySQL Workbench or terminal) and run the following commands to create the database, user, and tables.
 
-**Steg A: Create database and user**
+**Step A: Create database and user**
 ```sql
 CREATE DATABASE travel_agency_db;
 
@@ -168,22 +168,21 @@ Guest - Search travels, See Travel offers.
 *Guest (Not logged in)* - Can search trips and view hotels.
 
 
-## 📡 Example Endpoints (some endpoints may be in a todo state)
-| Metod  | Endpoint    | Description              | Permission |
-| :----- | :---------- | :----------------------- | :--------- |
-| POST   | `/register` | Create new user          | All        |
-| POST   | `/login`    | Log in user              | All        |
-| GET    | `/locations`| Get all destinations     | All        |
-| GET    | `/trips`    | Search trips             | All        |
-| POST   | `/bookings` | Book a trip              | Client     |
-| DELETE | `/db`       | Reset database           |    Admin   |
+## 📡 Example Endpoints 
+| Metod  | Endpoint                 | Description              | Permission |
+| :----- | :------------------------| :----------------------- | :--------- |
+| POST   | `/register`              | Create new user          | All        |
+| POST   | `/login`                 | Log in user              | All        |
+| POST   | `/bookings/ from-offer`  | Book a trip              | Client     |
+| PUT    | `/bookings/{id}/confirm` | Confirm a trip           | Client     |
+| DELETE | `/db`                    | Reset database           | Admin      |
 
 ## 🛠 Troubleshooting
 - **Error 403 Forbidden**: You are logged in but have the wrong role. (Check if the role is named "admin" or "Admin" in the database - the system is case-sensitive).
 
 - **Database Connection Error**: Database Connection Error: Check that the MySQL server is running and that credentials in Program.cs match exactly what you created in SQL.
 
-- **Session fungerar inte**:Session not working: If using Thunder Client/Postman, make sure Cookies are enabled in the settings.
+- **Sessions not working**:Session not working: If using Thunder Client/Postman, make sure Cookies are enabled in the settings.
 
 ## Database Model (ER Diagram)
 ```mermaid

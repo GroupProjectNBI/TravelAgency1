@@ -27,33 +27,19 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 // --- 2. Middleware Pipeline (don't change the order it's important!) ---
-app.UseSession();                           // Läs in kakan
-app.UseMiddleware<SessionAuthMiddleware>(); // Omvandla session till User Claims
+app.UseSession();                           // read in cookies
+app.UseMiddleware<SessionAuthMiddleware>(); // change session to User Claims
 app.UseAuthentication();
-app.UseAuthorization();                     // Kontrollera behörighet
+app.UseAuthorization();                     // controle authorization
 
 // --- 3. Endpoints ---
 
-// --- Login & Auth ---
-app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
-{
-  bool success = await Login.Post(credentials, config, ctx);
+//admin login, change password
+app.MapDelete("admin/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPatch("admin/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("admin/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
 
-  if (!success)
-  {
-    return Results.Json(
-        new { message = "Invalid credentials" },
-        statusCode: StatusCodes.Status401Unauthorized);
-  }
-
-  return Results.Ok(new { message = "Login successful" });
-});
-
-app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
-
-// --- All users logged in/ logged out ---
+// --- Experiences ---
 
 // Search for available experiences based on input: location, arr/dep-day, amount of rooms, 
 // amount of people, priceclass, package type ''Veggie/ Fine dining/ Wine"
@@ -79,22 +65,6 @@ Config config) =>
   return Results.Ok(offers);
 });
 
-// --- Logged in users ---
-
-//Create a booking based on the search for available packages
-app.MapPost("/bookings/from-offer", Experiences_BookFromExperienceOffer_Handler);
-app.MapPut("/bookings/{id}/confirm", async (int id, HttpContext ctx, Config config) =>
-{
-  var userIdStr = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
-  if (string.IsNullOrEmpty(userIdStr))
-    return Results.Json(new { message = "Not logged in." }, statusCode: StatusCodes.Status401Unauthorized);
-
-  int userId = int.Parse(userIdStr);
-
-  return await Bookings.ConfirmBooking(id, userId, config);
-
-}).RequireAuthorization();
-
 
 // --- Login & Auth ---
 app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
@@ -111,12 +81,12 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
   return Results.Ok(new { message = "Login successful" });
 });
 
-app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/resetmail/{email}", Users.Reset); // Need to be logged in.
-app.MapPatch("/newpassword/{temp_key}", Users.Patch); // Need to be logged in.
+app.MapDelete("/login", Login.Delete);
+app.MapGet("/resetmail/{email}", Users.Reset); //anyone can do this
+app.MapPatch("/newpassword/{temp_key}", Users.Patch); //anyone can do this
 
 // --- Admin & System ---
-app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//.RequireAuthorization(p => p.RequireRole("admin"));
+app.MapDelete("/db", Data.db_reset_to_default).RequireAuthorization(p => p.RequireRole("admin"));//.RequireAuthorization(p => p.RequireRole("admin"));
 
 // endpoints for locations -- no update for location
 app.MapGet("/locations", Locations.Get_All).RequireAuthorization(p => p.RequireRole("admin"));
@@ -131,8 +101,10 @@ app.MapGet("/admin/get_users", Admin.GetAllUsers)
 // --- Users ---
 app.MapGet("/register", Users.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/register/{Id}", Users.Get).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapPost("/register", Users_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/register", Users_Post_Handler); //anyone can create account left to implement is that only logged out users can create account. 
 
+// --- Profiles ---
+app.MapGet("/profile/packages", Profile.GetMyPackages).RequireAuthorization(); // logged in user is able to see their booking/ admin can also view
 
 // --- Hotels ---
 app.MapGet("/hotels", Hotels.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
@@ -160,7 +132,6 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete).RequireAuthorization(p =>
 app.MapGet("/packages", Package.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages_details/{locationid}/{packageid}/{hotelid}", Package.GetDetails);
-app.MapGet("/profile/packages", Profile.GetMyPackages).RequireAuthorization();
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
@@ -176,6 +147,18 @@ app.MapGet("/bookings", Bookings_Get_All_Handler).RequireAuthorization(p => p.Re
 app.MapPost("/bookings", Bookings.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/bookings/{id}", Bookings.Delete).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/bookings/{id}", Bookings.Put).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPost("/bookings/from-offer", Experiences_BookFromExperienceOffer_Handler); //Create a booking based on the search for available packages
+app.MapPut("/bookings/{id}/confirm", async (int id, HttpContext ctx, Config config) =>
+{
+  var userIdStr = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+  if (string.IsNullOrEmpty(userIdStr))
+    return Results.Json(new { message = "Not logged in." }, statusCode: StatusCodes.Status401Unauthorized);
+
+  int userId = int.Parse(userIdStr);
+
+  return await Bookings.ConfirmBooking(id, userId, config);
+
+}).RequireAuthorization();
 
 
 // --- Booking Meals ---
