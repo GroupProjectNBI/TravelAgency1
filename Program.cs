@@ -122,6 +122,7 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete).RequireAuthorization(p =>
 app.MapGet("/packages", Package.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages_details/{locationid}/{packageid}/{hotelid}", Package.GetDetails);
+app.MapGet("/profile/packages", Profile.GetMyPackages).RequireAuthorization();
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
