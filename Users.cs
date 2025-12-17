@@ -60,12 +60,9 @@ class Users
       // 2. ExecuteScalarAsync gets the first value that is returned 
       object? result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
 
-      // 3. Kontrollera om vi fick ett token tillbaka
       if (result != null && result != DBNull.Value)
       {
         string token = result.ToString() ?? String.Empty;
-
-        // Skapa ditt record
         var data = new No_GET_Data(token);
 
         // Return status code 200 OK
@@ -77,14 +74,9 @@ class Users
       }
       else
       {
-        // 4. Om result är null fanns ingen användare med den mailen.
-        // Av säkerhetsskäl svarar vi ofta OK ändå, men här får du välja:
 
-        // Alternativ A (Säkert - avslöjar inte om mailen finns):
         return Results.Ok(new { message = "If the email exists, a reset link has been generated." });
 
-        // Alternativ B (Utveckling - tydligt fel):
-        // return Results.NotFound(new { error = "User not found." });
       }
     }
     catch (Exception ex)
