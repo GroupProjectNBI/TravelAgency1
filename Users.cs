@@ -46,29 +46,53 @@ class Users
   }
 
   public record No_GET_Data(string token);
-  public static async Task<No_GET_Data?>
+  public static async Task<IResult>
   Reset(string email, Config config)
   {
-    No_GET_Data? result = null;
-    string checkUserquery = """ SELECT COUNT(*) FROM users WHERE email = @email """;
-    string queryPost = """  CALL create_password_request(@email)""";
-    string query = "select BIN_TO_UUID(temp_key) from password_request where user = (select id from users  WHERE email = @email); ";
-    var parameters = new MySqlParameter[] { new("@email", email) };
-    var count = await MySqlHelper.ExecuteScalarAsync(config.db, checkUserquery, parameters);
-    if (Convert.ToInt64(count) > 0)
-    {
-      await MySqlHelper.ExecuteNonQueryAsync(config.db, queryPost, parameters);
-      using (var reader = await
-      MySqlHelper.ExecuteReaderAsync(config.db, query, parameters))
-      {
-        if (reader.Read())
-        {
-          result = new(reader.GetString(0));
-        }
-      }
+    string query = "CALL create_password_request(@email)";
 
+    var parameters = new MySqlParameter[] {
+        new("@email", email)
+    };
+
+    try
+    {
+      // 2. ExecuteScalarAsync gets the first value that is returned 
+      object? result = await MySqlHelper.ExecuteScalarAsync(config.db, query, parameters);
+
+      // 3. Kontrollera om vi fick ett token tillbaka
+      if (result != null && result != DBNull.Value)
+      {
+        string token = result.ToString() ?? String.Empty;
+
+        // Skapa ditt record
+        var data = new No_GET_Data(token);
+
+        // Return status code 200 OK
+        return Results.Ok(new
+        {
+          message = "Reset link created successfully.",
+          data = data
+        });
+      }
+      else
+      {
+        // 4. Om result är null fanns ingen användare med den mailen.
+        // Av säkerhetsskäl svarar vi ofta OK ändå, men här får du välja:
+
+        // Alternativ A (Säkert - avslöjar inte om mailen finns):
+        return Results.Ok(new { message = "If the email exists, a reset link has been generated." });
+
+        // Alternativ B (Utveckling - tydligt fel):
+        // return Results.NotFound(new { error = "User not found." });
+      }
     }
-    return result;
+    catch (Exception ex)
+    {
+      // Logga felet
+      Console.WriteLine($"Database error: {ex.Message}");
+      return Results.Problem("An internal error occurred.");
+    }
 
   }
 
@@ -162,30 +186,79 @@ class Users
   }
 
   public record Patch_Args(string Email, string Password);
-  public static async Task
-  Patch(string temp_key, Patch_Args user, Config config)
+
+  public static async Task<IResult> Patch(string temp_key, Patch_Args user, Config config)
   {
+    // query for checking the exp_date
+    string queryCheck = "SELECT expire_date FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);";
+
+    // query for update password and delete the token in password_request
     string query = """
       START TRANSACTION;
       UPDATE users 
       SET password = @password 
-      WHERE id = (SELECT user from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
-    
+      WHERE id = (SELECT user_id from password_request where temp_key = UUID_TO_BIN(@temp_key)); 
+
       DELETE FROM password_request WHERE temp_key = UUID_TO_BIN(@temp_key);
 
-        COMMIT;
-
+      COMMIT;
       """;
+
     var parameters = new MySqlParameter[]
     {
-            new("@temp_key", temp_key),
-            new("@password", user.Password)
+        new("@temp_key", temp_key),
+        new("@password", user.Password) // Ensure you hash this password before sending it here!
     };
 
-    await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+    try
+    {
+      // 1. Check if the token exists and get the expiration date
+      object dateResult = await MySqlHelper.ExecuteScalarAsync(config.db, queryCheck, parameters);
 
+      // 2. Check if we got a result (Token exists)
+      if (dateResult != null && dateResult != DBNull.Value)
+      {
+        DateTime expireDate = Convert.ToDateTime(dateResult);
+
+        // 3. Check if the token is still valid (Date is today or in the future)
+        if (expireDate.Date >= DateTime.Now.Date)
+        {
+          // 4. Execute the update and delete transaction
+          int rowsAffected = await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
+
+          if (rowsAffected > 0)
+          {
+            var body = new { message = "Password updated successfully." };
+            return Results.Json(body, statusCode: StatusCodes.Status200OK);
+          }
+          else
+          {
+            // This happens if the token existed a millisecond ago but was deleted by another process
+            var errorBody = new { error = "Could not update password. Please try again." };
+            return Results.Json(errorBody, statusCode: StatusCodes.Status400BadRequest);
+          }
+        }
+        else
+        {
+          // 5. Handle cases where the token exists but the date has passed
+          var errorBody = new { error = "Token has expired." };
+          return Results.Json(errorBody, statusCode: StatusCodes.Status400BadRequest);
+        }
+      }
+      else
+      {
+        // 6. Token was not found in the database
+        var errorBody = new { error = "Invalid token." };
+        return Results.Json(errorBody, statusCode: StatusCodes.Status400BadRequest);
+      }
+    }
+    catch (Exception ex)
+    {
+      // 7. catch potential database errors
+      Console.WriteLine($"Error: {ex.Message}");
+      return Results.Problem("An internal error occurred.");
+    }
   }
-
   public static async Task
   Delete(int Id, Config config)
   {
