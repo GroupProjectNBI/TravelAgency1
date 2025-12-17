@@ -14,7 +14,7 @@ public class Bookings
   DateTime check_out,
   int guests,
   int rooms,
-  string status, //enum i DB string i c#
+  string status, //enum in DB string in c#
   DateTime created_at,
   decimal total_price
     );
@@ -152,5 +152,43 @@ public class Bookings
     await MySqlHelper.ExecuteNonQueryAsync(config.db, query, parameters);
 
 
+  }
+
+  public static async Task<IResult> ConfirmBooking(int bookingId, int userId, Config config)
+  {
+    // update the status of the booking if it exists
+    //belongs to the userId and is status pending
+
+    string sql = """
+    UPDATE bookings
+    SET status = 'confirmed'
+    WHERE id = @id
+    AND user_id = @user_id
+    AND status = 'pending';
+    """;
+
+    int rows = await MySqlHelper.ExecuteNonQueryAsync(config.db, sql,
+    [
+      new("@id", bookingId),
+      new("@user_id", userId)
+    ]);
+
+    if (rows == 1)
+      return Results.NoContent(); // 204
+
+    var statusObj = await MySqlHelper.ExecuteScalarAsync(
+      config.db,
+      "SELECT status FROM bookings where id = @id;",
+      [new("@id", bookingId)]
+      );
+
+    if (statusObj is null || statusObj == DBNull.Value)
+      return Results.NotFound(new { message = "Booking not found." });
+
+    var status = statusObj.ToString();
+    if (!string.Equals(status, "pending", StringComparison.OrdinalIgnoreCase))
+      return Results.Conflict(new { message = $"Booking is already '{status}'." });
+
+    return Results.StatusCode(StatusCodes.Status403Forbidden); //booking exists but it's not the user ids
   }
 }
