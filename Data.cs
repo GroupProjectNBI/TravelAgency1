@@ -33,7 +33,7 @@ class Data
   (
     user_id INT NOT NULL,
     temp_key BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-    expire_date DATE,
+    expire_date DATE DEFAULT DATEADD(day, 1, GETDATE()) ,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
@@ -57,20 +57,23 @@ class Data
     location_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     price_class INT NOT NULL,
     has_breakfast BOOLEAN NOT NULL DEFAULT FALSE,
+    max_rooms INT NOT NULL DEFAULT 10,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
   CREATE TABLE rooms (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  hotel_id INT NOT NULL,
-  room_number INT NOT NULL,
-  name ENUM ('Single', 'Double', 'Suite') NOT NULL,
-  capacity INT NOT NULL,
-  price_per_night DECIMAL(10,2) NOT NULL,
-  UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
-  FOREIGN KEY (hotel_id) REFERENCES hotels(id)
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    hotel_id INT NOT NULL,
+    room_number INT NOT NULL,
+    name ENUM ('Single', 'Double', 'Suite') NOT NULL,
+    capacity INT NOT NULL,
+    price_per_night DECIMAL(10,2) NOT NULL,
+    UNIQUE KEY roomnumber_per_hotel (hotel_id, room_number),
+    FOREIGN KEY (hotel_id) REFERENCES hotels(id)
   );
 
   CREATE TABLE restaurants (
@@ -79,6 +82,8 @@ class Data
     name VARCHAR(100),
     is_veggie_friendly BOOLEAN NOT NULL DEFAULT FALSE,
     is_fine_dining BOOLEAN NOT NULL DEFAULT FALSE,
+    capacity INT NULL DEFAULT 0,
+    max_cap INT NULL,
     is_wine_focused BOOLEAN NOT NULL DEFAULT FALSE,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
@@ -88,7 +93,7 @@ class Data
     location_id INT NOT NULL,
     name VARCHAR(100),
     description VARCHAR (254),
-    package_type ENUM ('Veggie', 'Fish', 'Fine dining'),
+    package_type ENUM ('Veggie', 'Fine dining', 'Wine') NOT NULL,
     FOREIGN KEY (location_id) REFERENCES locations(id)
   );
 
@@ -113,8 +118,8 @@ class Data
     check_out DATE NOT NULL,
     guests INT NOT NULL,
     rooms INT NOT NULL,
-    status ENUM('pending','confirmed','cancelled'),
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending','confirmed','cancelled') DEFAULT 'pending',
+    created_at DATE NOT NULL DEFAULT (CURRENT_DATE),
     total_price DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (location_id) REFERENCES locations(id),
@@ -130,7 +135,52 @@ class Data
   FOREIGN KEY (bookings_id) REFERENCES bookings(id)
   );
 
+
   """;
+    /*
+      DELIMITER //
+
+      DROP PROCEDURE IF EXISTS AddRoom; 
+
+      CREATE PROCEDURE AddRoom(
+        IN p_hotel_id INT,
+        IN p_room_number INT,  
+        IN p_name VARCHAR(50), 
+        IN p_capacity INT,
+        IN p_price DECIMAL(10,2)
+      )
+      BEGIN
+        DECLARE v_current_total_capacity INT DEFAULT 0;
+        DECLARE v_max_cap INT DEFAULT 0;
+        DECLARE v_new_total_capacity INT;
+        DECLARE v_next_room_number INT; 
+
+        SELECT max_cap INTO v_max_cap 
+        FROM hotels WHERE id = p_hotel_id;
+
+        SELECT IFNULL(SUM(capacity), 0) INTO v_current_total_capacity 
+        FROM rooms WHERE hotel_id = p_hotel_id;
+
+        SELECT IFNULL(MAX(room_number), 99) + 1 INTO v_next_room_number
+        FROM rooms WHERE hotel_id = p_hotel_id;
+
+        SET v_new_total_capacity = v_current_total_capacity + p_capacity;
+
+        IF v_max_cap IS NOT NULL AND v_new_total_capacity > v_max_cap THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Capacity limit exceeded: Cannot add room.';
+        ELSE
+            INSERT INTO rooms (hotel_id, room_number, name, capacity, price_per_night)
+            VALUES (p_hotel_id, v_next_room_number, p_name, p_capacity, p_price);
+
+            UPDATE hotels SET capacity = v_new_total_capacity WHERE id = p_hotel_id;
+
+            SELECT v_next_room_number as NewRoomNumber;
+        END IF;
+      END //
+
+      DELIMITER ;*/
+
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS booking_meals");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS bookings");
     await MySqlHelper.ExecuteNonQueryAsync(config.db, "DROP TABLE IF EXISTS packages_meals");
@@ -222,60 +272,60 @@ class Data
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, @"INSERT INTO restaurants (location_id, name, is_veggie_friendly, is_fine_dining, is_wine_focused) 
     VALUES (1, 'roserio', 1, 1, 0), (1, 'pizza hut', 1, 0, 0), (1, 'stinas grill', 1, 1, 1), (2, 'grodans boll', 0, 0, 0),(1,'Rosario Bistro',1,0,0),
-    (2,'Seaside Pizza',1,0,0),(3,'Gothenburg Grill',0,0,1),(4,'Oslo Fine',1,1,1),(5,'Bryggen Cafe',1,0,0),
-    (6,'Trondheim Taverna',0,0,0),(7,'Copenhagen Table',1,1,1),(8,'Aarhus Kitchen',1,0,0),(9,'Odense Deli',1,0,0),(10,'Helsinki Harbor',0,1,1),
-    (11,'Espoo Eats',1,0,0),(12,'Tampere Tapas',1,0,0),(13,'Reykjavik Fish',0,1,0),(14,'Akureyri Cafe',1,0,0),(15,'Berlin Brasserie',1,1,1),
+    (2,'Seaside Pizza',1,0,1),(3,'Gothenburg Grill',0,0,1),(4,'Oslo Fine',1,1,1),(5,'Bryggen Cafe',1,0,0),
+    (6,'Trondheim Taverna',0,0,0),(7,'Copenhagen Table',1,1,1),(8,'Aarhus Kitchen',1,0,0),(9,'Odense Bistro',1,1,1),(10,'Helsinki Harbor',0,1,1),
+    (11,'Espoo Eats',1,0,0),(12,'Tampere Tapas',1,0,1),(13,'Reykjavik Fish',0,1,0),(14,'Akureyri Winebar',1,1,1),(15,'Berlin Brasserie',1,1,1),
     (16,'Munich Biergarten',0,0,1),(17,'Hamburg Harbor Grill',1,0,1),(18,'Amsterdam Pancakes',1,0,0),(19,'Rotterdam Fusion',1,1,1),(20,'Utrecht Corner',1,0,0),
-    (21,'Paris Gourmet',1,1,1),(22,'Lyon Bistro',1,1,1),(23,'Nice Seafood',0,1,1),(24,'Madrid Tapas',1,0,1),(25,'Barcelona Beach',1,0,1),
-    (26,'Valencia Paella',0,1,0),(27,'Rome Trattoria',1,0,1),(28,'Milan Ristorante',1,1,1),(29,'Venice Osteria',1,1,0),(30,'Uppsala Cafe',1,0,0),
-    (31,'Vasteras Diner',1,0,0),(32,'Linkoping Kitchen',1,0,0),(33,'Kristiansand Fish',0,1,0),(34,'Tromso Arctic',1,0,0),(35,'Helsingor Harbor',1,0,0),
-    (36,'Roskilde Grill',1,0,0),(37,'Oulu Cafe',1,0,0),(38,'Selfoss Bistro',1,0,0),(39,'Frankfurt Steak',0,1,1),(40,'Stuttgart Table',1,0,1),
-    (41,'Eindhoven Eats',1,0,0),(42,'Bordeaux Winebar',1,1,1),(43,'Seville Tapas',1,0,1),(44,'Bilbao Pintxos',1,0,1),(45,'Naples Pizza',1,0,0),
-    (46,'Turin Truffle',1,1,1),(47,'Kalmar Harbor',1,0,0),(48,'Halmstad Beach Cafe',1,0,0),(49,'Fredrikstad Fjord',1,0,0),(50,'Hillerod Garden',1,0,0);");
+    (21,'Paris Gourmet',1,1,1),(22,'Lyon Bistro',1,1,1),(23,'Nice restaurant',1,1,1),(24,'Madrid Tapas',1,0,1),(25,'Barcelona Beach',1,0,1),
+    (26,'Valencia Paella',1,1,1),(27,'Rome Trattoria',1,0,1),(28,'Milan Ristorante',1,1,1),(29,'Venice Osteria',1,1,0),(30,'Uppsala Bistro',1,1,0),
+    (31,'Volk',1,1,0),(32,'Linkoping Kitchen',1,0,1),(33,'Kristiansand Fish',0,1,0),(34,'Tromso Arctic',1,0,1),(35,'Helsingor Harbor',1,0,0),
+    (36,'Rosk',1,1,0),(37,'Oulu Cafe',1,0,1),(38,'Selfoss Bistro',1,0,0),(39,'Frankfurt Steak',0,1,1),(40,'Stuttgart Table',1,0,1),
+    (41,'Eindhoven Eats',1,0,0),(42,'Bordeaux Winebar',1,1,1),(43,'Seville Tapas',1,0,1),(44,'Bilbao Pintxos',1,0,1),(45,'Naples Pizza',1,0,1),
+    (46,'Turin Truffle',1,1,1),(47,'Kalmar Harbor',1,0,0),(48,'Halmstad Beach Cafe',1,0,1),(49,'Fredrikstad Fjord',1,0,0),(50,'Hillerod Garden',1,0,0);");
 
     await MySqlHelper.ExecuteNonQueryAsync(config.db, @"
     INSERT INTO packages (location_id, name, description, package_type) VALUES
-    (1, 'package_fish', 'a nice fish package for the drunken *hick*', 'Fish'),(1, 'Stockholm Veggie', 'Veggie weekend in Stockholm', 'Veggie'),
-    (2, 'Malmoe Fish', 'Seafood special in Malmoe', 'Fish'),(3, 'Gothenburg Gourmet', 'Fine dining in Gothenburg', 'Fine dining'),
-    (4, 'Oslo Explorer', 'City break in Oslo', 'Fish'),(5, 'Bergen Fjord', 'Fjord and food', 'Veggie'),
+    (1, 'Wine and dine', 'a nice wine package for the drunken *hick*', 'Wine'),(1, 'Stockholm Veggie', 'Veggie weekend in Stockholm', 'Veggie'),
+    (2, 'Malmoe Wine', 'Wine special in Malmoe', 'Wine'),(3, 'Gothenburg Gourmet', 'Fine dining in Gothenburg', 'Fine dining'),
+    (4, 'Oslo Explorer', 'City break in Oslo', 'Wine'),(5, 'Bergen Fjord', 'Fjord and food', 'Veggie'),
     (6, 'Trondheim Culture', 'Museums and meals', 'Fine dining'),(7, 'Copenhagen Classic', 'Canals and cuisine', 'Fine dining'),
-    (8, 'Aarhus Relax', 'Cozy stay in Aarhus', 'Veggie'), (9, 'Odense Family', 'Family friendly package', 'Fish'),
+    (8, 'Aarhus Relax', 'Cozy stay in Aarhus', 'Veggie'), (9, 'Odense Family', 'Family friendly package', 'Wine'),
     (10, 'Helsinki Winter', 'Northern lights and sauna', 'Fine dining'),(11, 'Espoo Escape', 'Weekend escape', 'Veggie'),
-    (12, 'Tampere Taste', 'Local flavors', 'Fish'),(13, 'Reykjavik Adventure', 'Icelandic nature', 'Veggie'),
-    (14, 'Akureyri Calm', 'Small town charm', 'Fish'),
+    (12, 'Tampere Taste', 'Local flavors', 'Wine'),(13, 'Reykjavik Adventure', 'Icelandic nature', 'Veggie'),
+    (14, 'Akureyri Calm', 'Small town charm', 'Wine'),
     (15, 'Berlin Nights', 'City nightlife', 'Fine dining'),
-    (16, 'Munich Beer', 'Oktoberfest style', 'Fish'),
+    (16, 'Munich Beer', 'Oktoberfest style', 'Wine'),
     (17, 'Hamburg Harbor', 'Harbor walks and food', 'Veggie'),
     (18, 'Amsterdam Canals', 'Bike and dine', 'Fine dining'),
-    (19, 'Rotterdam Modern', 'Architecture and meals', 'Fish'),
+    (19, 'Rotterdam Modern', 'Architecture and meals', 'Wine'),
     (20, 'Utrecht Quiet', 'Historic canals', 'Veggie'),
     (21, 'Paris Romance', 'Romantic dinners', 'Fine dining'),
     (22, 'Lyon Food', 'Gastronomy tour', 'Fine dining'),
-    (23, 'Nice Sun', 'Beach and seafood', 'Fish'),
+    (23, 'Nice Sun', 'Beach and seafood', 'Wine'),
     (24, 'Madrid Culture', 'Museums and tapas', 'Fine dining'),
-    (25, 'Barcelona Art', 'Gaudi and gastronomy', 'Fish'),
-    (26, 'Valencia Paella', 'Paella weekend', 'Fish'),
+    (25, 'Barcelona Art', 'Gaudi and gastronomy', 'Wine'),
+    (26, 'Valencia Paella', 'Paella weekend', 'Wine'),
     (27, 'Rome History', 'Ancient sites and food', 'Fine dining'),
     (28, 'Milan Fashion', 'Shopping and dining', 'Fine dining'),
     (29, 'Venice Romance', 'Canals and cuisine', 'Fine dining'),
     (30, 'Uppsala Study', 'University town break', 'Veggie'),
     (31, 'Vasteras Calm', 'Lake views', 'Veggie'),
-    (32, 'Linkoping Tech', 'Innovation and food', 'Fish'),
+    (32, 'Linkoping Tech', 'Innovation and food', 'Wine'),
     (33, 'Kristiansand Coast', 'Coastal escape', 'Veggie'),
-    (34, 'Tromso Lights', 'Northern lights package', 'Fish'),
+    (34, 'Tromso Lights', 'Northern lights package', 'Wine'),
     (35, 'Helsingor Castle', 'Castle and cuisine', 'Fine dining'),
     (36, 'Roskilde Festival', 'Music and meals', 'Veggie'),
-    (37, 'Oulu Winter', 'Snow and sauna', 'Fish'),
+    (37, 'Oulu Winter', 'Snow and sauna', 'Wine'),
     (38, 'Selfoss Nature', 'Icelandic countryside', 'Veggie'),
     (39, 'Frankfurt Business', 'Business friendly', 'Fine dining'),
     (40, 'Stuttgart Vine', 'Wine region', 'Fine dining'),
     (41, 'Eindhoven Tech', 'Design and dining', 'Veggie'),
     (42, 'Bordeaux Wine', 'Wine tasting', 'Fine dining'),
-    (43, 'Seville Flamenco', 'Culture and tapas', 'Fish'),
+    (43, 'Seville Flamenco', 'Culture and tapas', 'Wine'),
     (44, 'Bilbao Art', 'Guggenheim visit', 'Fine dining'),
-    (45, 'Naples Coast', 'Coastline and pizza', 'Fish'),
+    (45, 'Naples Coast', 'Coastline and pizza', 'Wine'),
     (46, 'Turin Truffle', 'Gourmet truffle tour', 'Fine dining'),
-    (47, 'Kalmar Island', 'Island hopping', 'Veggie'),(48, 'Halmstad Surf', 'Beach and surf', 'Fish'),
+    (47, 'Kalmar Island', 'Island hopping', 'Veggie'),(48, 'Halmstad Surf', 'Beach and surf', 'Wine'),
     (49, 'Fredrikstad Fort', 'Historic fort visit', 'Veggie'),(50, 'Hillerod Palace', 'Palace and gardens', 'Fine dining');
     ");
 
@@ -316,8 +366,31 @@ class Data
     (45,'2025-07-16','Dinner'),(46,'2025-07-17','Breakfast'),(47,'2025-07-18','Lunch'),(48,'2025-07-19','Dinner'),
     (49,'2025-07-20','Breakfast'),(50,'2025-07-21','Lunch');");
 
+    string createQuery = """
+      DROP PROCEDURE IF EXISTS create_password_request;
+    CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+    BEGIN
+        DECLARE v_user_id INT;
+        DECLARE v_uuid CHAR(36);
 
-    // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
-    //, NOW() + INTERVAL 1 DAY
+        SELECT id INTO v_user_id FROM users WHERE email = p_email;
+
+        IF v_user_id IS NOT NULL THEN
+            -- Generera UUID
+            SET v_uuid = UUID();
+            
+            INSERT INTO password_request (user_id, temp_key) 
+            VALUES (v_user_id, UUID_TO_BIN(v_uuid));
+
+            SELECT v_uuid as token; 
+        ELSE
+            SELECT NULL as token;
+        END IF;
+    END
+    """;
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, createQuery, null);
+
+
   }
 }
