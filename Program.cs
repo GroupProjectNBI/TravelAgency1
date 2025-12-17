@@ -84,8 +84,8 @@ app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpCon
 });
 
 app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/resetmail/{email}", Users.Reset); // Need to be logged in.
+app.MapPatch("/newpassword/{temp_key}", Users.Patch); // Need to be logged in.
 
 // --- Admin & System ---
 app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//.RequireAuthorization(p => p.RequireRole("admin"));
