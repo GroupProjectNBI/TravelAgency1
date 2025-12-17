@@ -33,7 +33,7 @@ class Data
   (
     user_id INT NOT NULL,
     temp_key BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-    expire_date DATE DEFAULT DATEADD(day, 1, GETDATE()) ,
+    expire_date DATE DEFAULT (CURRENT_TIMESTAMP + INTERVAL 1 DAY),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
