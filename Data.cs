@@ -33,7 +33,7 @@ class Data
   (
     user_id INT NOT NULL,
     temp_key BINARY(16) PRIMARY KEY DEFAULT (UUID_TO_BIN(UUID())),
-    expire_date DATE,
+    expire_date DATE DEFAULT DATEADD(day, 1, GETDATE()) ,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
 
@@ -366,8 +366,31 @@ class Data
     (45,'2025-07-16','Dinner'),(46,'2025-07-17','Breakfast'),(47,'2025-07-18','Lunch'),(48,'2025-07-19','Dinner'),
     (49,'2025-07-20','Breakfast'),(50,'2025-07-21','Lunch');");
 
+    string createQuery = """
+      DROP PROCEDURE IF EXISTS create_password_request;
+    CREATE PROCEDURE create_password_request(IN p_email VARCHAR(255))
+    BEGIN
+        DECLARE v_user_id INT;
+        DECLARE v_uuid CHAR(36);
 
-    // await MySqlHelper.ExecuteNonQueryAsync(config.db, "CALL create_password_request('edvin@example.com')");
-    //, NOW() + INTERVAL 1 DAY
+        SELECT id INTO v_user_id FROM users WHERE email = p_email;
+
+        IF v_user_id IS NOT NULL THEN
+            -- Generera UUID
+            SET v_uuid = UUID();
+            
+            INSERT INTO password_request (user_id, temp_key) 
+            VALUES (v_user_id, UUID_TO_BIN(v_uuid));
+
+            SELECT v_uuid as token; 
+        ELSE
+            SELECT NULL as token;
+        END IF;
+    END
+    """;
+
+    await MySqlHelper.ExecuteNonQueryAsync(config.db, createQuery, null);
+
+
   }
 }

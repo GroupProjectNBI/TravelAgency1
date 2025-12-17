@@ -1,8 +1,6 @@
 global using MySql.Data.MySqlClient;
 using TravelAgency;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using MySqlX.XDevAPI.Common;
+using System.Security.Claims;
 
 // --- 1. Configuration And Services ---
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +29,7 @@ var app = builder.Build();
 // --- 2. Middleware Pipeline (don't change the order it's important!) ---
 app.UseSession();                           // Läs in kakan
 app.UseMiddleware<SessionAuthMiddleware>(); // Omvandla session till User Claims
+app.UseAuthentication();
 app.UseAuthorization();                     // Kontrollera behörighet
 
 // --- 3. Endpoints ---
@@ -84,7 +83,37 @@ Config config) =>
 
 //Create a booking based on the search for available packages
 app.MapPost("/bookings/from-offer", Experiences_BookFromExperienceOffer_Handler);
-app.MapGet("/profile", Profile.Get).RequireAuthorization(); // has to be logged in 
+app.MapPut("/bookings/{id}/confirm", async (int id, HttpContext ctx, Config config) =>
+{
+  var userIdStr = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier);
+  if (string.IsNullOrEmpty(userIdStr))
+    return Results.Json(new { message = "Not logged in." }, statusCode: StatusCodes.Status401Unauthorized);
+
+  int userId = int.Parse(userIdStr);
+
+  return await Bookings.ConfirmBooking(id, userId, config);
+
+}).RequireAuthorization();
+
+
+// --- Login & Auth ---
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Json(
+        new { message = "Invalid credentials" },
+        statusCode: StatusCodes.Status401Unauthorized);
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
+
+app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/resetmail/{email}", Users.Reset); // Need to be logged in.
+app.MapPatch("/newpassword/{temp_key}", Users.Patch); // Need to be logged in.
 
 // --- Admin & System ---
 app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//.RequireAuthorization(p => p.RequireRole("admin"));
@@ -131,6 +160,7 @@ app.MapDelete("/restaurants/{id}", Restaurants.Delete).RequireAuthorization(p =>
 app.MapGet("/packages", Package.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages/{Id}", Package.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/packages_details/{locationid}/{packageid}/{hotelid}", Package.GetDetails);
+app.MapGet("/profile/packages", Profile.GetMyPackages).RequireAuthorization();
 app.MapPost("/packages", Package.Post).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPut("/packages/{id}", Package.Put).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapDelete("/packages/{id}", Package.DeletePackage).RequireAuthorization(p => p.RequireRole("admin"));
