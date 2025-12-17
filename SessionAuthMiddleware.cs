@@ -11,7 +11,7 @@ public class SessionAuthMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        // DEBUG: Kolla vad som finns i sessionen
+        // DEBUG: check whats in the session
         var userId = context.Session.GetInt32("user_id");
         var userRole = context.Session.GetString("role");
         if (userId.HasValue && !string.IsNullOrEmpty(userRole))
@@ -22,7 +22,7 @@ public class SessionAuthMiddleware
                 new Claim(ClaimTypes.Role, userRole)
             };
 
-            // VIKTIGT: "SessionAuth" måste matcha det du skrev i AuthExtensions/Program.cs
+            // VIKTIGT: "SessionAuth" mave to match what you wrote in AuthExtensions/Program.cs
             var identity = new ClaimsIdentity(claims, "SessionAuth");
             var principal = new ClaimsPrincipal(identity);
 

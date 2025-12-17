@@ -4,36 +4,60 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using MySqlX.XDevAPI.Common;
 
-// --- 1. Konfiguration och Services ---
+// --- 1. Configuration And Services ---
 var builder = WebApplication.CreateBuilder(args);
 
-// Databas-config (Överväg att flytta detta till appsettings.json i framtiden)
+// Database-config 
 Config config = new("server=127.0.0.1;uid=travel_agent;pwd=travel_agent;database=travelagency");
 builder.Services.AddSingleton(config);
 
-// Caching och Session
+// Caching and Session
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
   options.Cookie.HttpOnly = true;
   options.Cookie.IsEssential = true;
-  options.IdleTimeout = TimeSpan.FromMinutes(30); // Logga ut vid inaktivitet
+  options.IdleTimeout = TimeSpan.FromMinutes(30); // logout if unactive
 });
 
-// Autentisering (Kräver din AuthExtensions.cs fil)
+// Authentication (AuthExtensions.cs file)
 builder.Services.AddTravelAgencyAuthentication();
 
-// Auktorisering
+// Authorization
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// --- 2. Middleware Pipeline (Ordningen är viktig!) ---
+// --- 2. Middleware Pipeline (don't change the order it's important!) ---
 app.UseSession();                           // Läs in kakan
 app.UseMiddleware<SessionAuthMiddleware>(); // Omvandla session till User Claims
 app.UseAuthorization();                     // Kontrollera behörighet
 
 // --- 3. Endpoints ---
+
+// --- Login & Auth ---
+app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
+{
+  bool success = await Login.Post(credentials, config, ctx);
+
+  if (!success)
+  {
+    return Results.Json(
+        new { message = "Invalid credentials" },
+        statusCode: StatusCodes.Status401Unauthorized);
+  }
+
+  return Results.Ok(new { message = "Login successful" });
+});
+
+app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
+
+// --- All users logged in/ logged out ---
+
+// Search for available experiences based on input: location, arr/dep-day, amount of rooms, 
+// amount of people, priceclass, package type ''Veggie/ Fine dining/ Wine"
 app.MapGet("/experiences", async (
 int location_id,
 DateOnly check_in,
@@ -55,27 +79,12 @@ Config config) =>
   var offers = await Experiences.SearchOffers(location_id, check_in, check_out, rooms, guests, max_price_class, package, limit, config);
   return Results.Ok(offers);
 });
+
+// --- Logged in users ---
+
+//Create a booking based on the search for available packages
 app.MapPost("/bookings/from-offer", Experiences_BookFromExperienceOffer_Handler);
-
-
-// --- Login & Auth ---
-app.MapPost("/login", async (Login.Post_Args credentials, Config config, HttpContext ctx) =>
-{
-  bool success = await Login.Post(credentials, config, ctx);
-
-  if (!success)
-  {
-    return Results.Json(
-        new { message = "Invalid credentials" },
-        statusCode: StatusCodes.Status401Unauthorized);
-  }
-
-  return Results.Ok(new { message = "Login successful" });
-});
-
-app.MapDelete("/login", Login.Delete).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapPatch("/newpassword/{temp_key}", Users.Patch).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/reset/{email}", Users.Reset).RequireAuthorization(p => p.RequireRole("admin"));
+app.MapGet("/profile", Profile.Get).RequireAuthorization(); // has to be logged in 
 
 // --- Admin & System ---
 app.MapDelete("/db", Data.db_reset_to_default).AllowAnonymous();//.RequireAuthorization(p => p.RequireRole("admin"));
@@ -94,7 +103,7 @@ app.MapGet("/admin/get_users", Admin.GetAllUsers)
 app.MapGet("/register", Users.GetAll).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapGet("/register/{Id}", Users.Get).RequireAuthorization(p => p.RequireRole("admin"));
 app.MapPost("/register", Users_Post_Handler).RequireAuthorization(p => p.RequireRole("admin"));
-app.MapGet("/profile", Profile.Get).RequireAuthorization(); // Kräver inloggning --- bra att ha
+
 
 // --- Hotels ---
 app.MapGet("/hotels", Hotels.GetAll).RequireAuthorization(p => p.RequireRole("admin"));

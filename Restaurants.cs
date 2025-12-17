@@ -187,7 +187,6 @@ class Restaurants
         }
         catch (Exception)
         {
-            // 
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }

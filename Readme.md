@@ -148,9 +148,9 @@ This API uses Session-based authentication.
 ### Roller
 Admin - Full Access (Reset DB, handle users).
 
-Client - Book trabels, Watch History.
+Client - Book travels, Watch History.
 
-Guest - Search travels, See Hotels.
+Guest - Search travels, See Travel offers.
 ### This API uses Session-based authentication.
 
 **Log in**: Send a POST to /login with email and password.
@@ -165,7 +165,7 @@ Guest - Search travels, See Hotels.
 
 *Client* - Can book trips and view their bookings
 
-*Guest (Not logged in))* - Can search trips and view hotels.
+*Guest (Not logged in)* - Can search trips and view hotels.
 
 
 ## 📡 Example Endpoints (some endpoints may be in a todo state)
