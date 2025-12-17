@@ -11,7 +11,7 @@ public static class AuthExtensions
         services.AddAuthentication("SessionAuth")
             .AddCookie("SessionAuth", options =>
             {
-                // Konfigurera 401/403 svar istället för redirect till login-sida
+                // configurate 401/403 answer instead of redirecting to login-page
                 options.Events.OnRedirectToLogin = context =>
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;

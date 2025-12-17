@@ -162,7 +162,7 @@ class package_meals
 
 
     //DELETE
-    //DELETE-method för att ta bort en rad i packages_meals
+    //DELETE-method to delete a row in packages_meals
     public static async Task Delete(int Id, Config config)
     {
         string query = "DELETE FROM packages_meals WHERE id = @Id";

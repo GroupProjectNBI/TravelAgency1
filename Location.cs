@@ -52,7 +52,7 @@ namespace TravelAgency
                 throw new ArgumentException("You must enter a city name.");
 
             List<Location_Data> result = new();
-            string search_value = $"%{user_input}%";
+            string search_value = $"%{user_input}%"; //user input is sent in like data and not SQL, no risk for injections. However might have a optimasation problem since it's a wildcard. Good idea to limit this
 
             string query = "SELECT id, countries_Id, city FROM locations WHERE city LIKE @UserInput";
             var parameters = new MySqlParameter[]

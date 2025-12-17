@@ -110,7 +110,7 @@ class Package
                 Country: reader.GetString("country"),
                 Price: $"${reader.GetInt32("price_class")}",
                 HasBreakfast: reader.GetBoolean("has_breakfast"),
-                // Hantera att Capacity kan vara NULL i databasen
+                // Handle Capacity cab be NULL in the database
                 Capacity: reader.IsDBNull(reader.GetOrdinal("capacity")) ? 0 : reader.GetInt32("capacity")
                 ));
             }
@@ -142,7 +142,6 @@ class Package
         new("@packageid", packageid)
         };
 
-        // Note: Changed 'hotelSql' to 'packageSql' here so it executes the correct query
         using (var reader = await MySqlHelper.ExecuteReaderAsync(config.db, packageSql, packageParams))
         {
             while (await reader.ReadAsync())
@@ -154,7 +153,7 @@ class Package
                 Type: reader.GetString("package_type"),
                 City: reader.GetString("city"),
                 Country: reader.GetString("country"),
-                // Kolla om det är null (dvs inga måltider i paketet)
+                // check if null (no meals in the package)
                 IncludedMeals: reader.IsDBNull(reader.GetOrdinal("meals")) ? "None" : reader.GetString("meals"),
                 IncludedRestaurants: reader.IsDBNull(reader.GetOrdinal("restaurants")) ? "None" : reader.GetString("restaurants")
                 ));
@@ -223,18 +222,18 @@ class Package
         }
         catch (MySql.Data.MySqlClient.MySqlException)
         {
-            // Logga mex internt om du har logger
+            // Logg mex internally if you have logs
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
         catch (Exception)
         {
-            // Logga ex internt
+            // Log ex internally
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
     }
 
 
-    public record UpdatePackage_package( // expected fiels for update
+    public record UpdatePackage_package( // expected fields for update
 
       int location_id,
       string name,
