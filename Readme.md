@@ -137,20 +137,7 @@ Now that the server is running, we need to populate the database with data (Hote
 
 
 ### 🔐 Authentication & Endpoints
-This API uses Session-based authentication.
 
-- Log in: Send a POST to /login with email and password.
-
-- If successful: The server sets a Cookie in your browser/API client.
-
-- Access: The Middleware (SessionAuthMiddleware) reads the cookie on every request and grants access based on your role in the database.
-
-### Roller
-Admin - Full Access (Reset DB, handle users).
-
-Client - Book travels, Watch History.
-
-Guest - Search travels, See Travel offers.
 ### This API uses Session-based authentication.
 
 **Log in**: Send a POST to /login with email and password.
